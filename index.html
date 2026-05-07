@@ -1,0 +1,1293 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0f0f0f">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>片手電卓</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Noto+Sans+JP:wght@300;400&display=swap');
+
+  :root {
+    --bg: #0f0f0f;
+    --surface: #1a1a1a;
+    --surface2: #242424;
+    --text: #f0f0f0;
+    --text-dim: #666;
+    --accent: #e8ff5a;
+    --accent-dim: rgba(232,255,90,0.15);
+    --btn-num: #1e1e1e;
+    --btn-op: #2a2a2a;
+    --btn-eq: var(--accent);
+    --btn-fn: #222;
+    --shadow: rgba(0,0,0,0.5);
+    --radius: 14px;
+    --gap: 10px;
+    --btn-size: 70px;
+    --font-mono: 'DM Mono', monospace;
+    --font-jp: 'Noto Sans JP', sans-serif;
+    --transition: 0.25s cubic-bezier(0.34,1.56,0.64,1);
+  }
+
+  [data-theme="light"] {
+    --bg: #f2f2f0;
+    --surface: #ffffff;
+    --surface2: #e8e8e5;
+    --text: #111;
+    --text-dim: #999;
+    --btn-num: #ffffff;
+    --btn-op: #ebebeb;
+    --btn-fn: #f0f0f0;
+    --shadow: rgba(0,0,0,0.12);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    height: 100%; overflow: hidden;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-jp);
+    touch-action: none;
+  }
+
+  #app {
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* ─── DISPLAY ─── */
+  #display-area {
+    flex: 0 0 auto;
+    padding: 12px 20px 8px;
+    background: var(--bg);
+    position: relative;
+    z-index: 10;
+  }
+
+  #expr {
+    font-family: var(--font-mono);
+    font-size: 15px;
+    color: var(--text-dim);
+    min-height: 20px;
+    text-align: right;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    letter-spacing: 0.02em;
+  }
+
+  #result {
+    font-family: var(--font-mono);
+    font-size: clamp(36px, 10vw, 52px);
+    font-weight: 300;
+    color: var(--text);
+    text-align: right;
+    line-height: 1.1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    transition: transform 0.15s ease, opacity 0.15s ease;
+    letter-spacing: -0.02em;
+  }
+
+  #result.pop {
+    animation: pop 0.2s cubic-bezier(0.34,1.56,0.64,1);
+  }
+
+  @keyframes pop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.04); }
+    100% { transform: scale(1); }
+  }
+
+  #divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--surface2), transparent);
+    margin: 4px 0;
+  }
+
+  /* ─── HISTORY PANEL ─── */
+  #history-panel {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: var(--bg);
+    z-index: 50;
+    transform: translateY(100%);
+    transition: transform 0.35s cubic-bezier(0.32,0.72,0,1);
+    padding: 60px 20px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  #history-panel.open {
+    transform: translateY(0);
+  }
+
+  #history-title {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  #history-close {
+    position: absolute;
+    top: 16px; right: 20px;
+    width: 36px; height: 36px;
+    background: var(--surface2);
+    border: none;
+    border-radius: 50%;
+    color: var(--text);
+    font-size: 18px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  #history-list {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .history-item {
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .history-item:active { background: var(--surface2); }
+
+  .history-expr {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+
+  .history-result {
+    font-family: var(--font-mono);
+    font-size: 22px;
+    font-weight: 400;
+    color: var(--text);
+    margin-top: 2px;
+  }
+
+  /* ─── SETTINGS PANEL ─── */
+  #settings-panel {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: var(--bg);
+    z-index: 50;
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.32,0.72,0,1);
+    padding: 60px 20px 20px;
+    overflow-y: auto;
+  }
+
+  #settings-panel.open { transform: translateX(0); }
+
+  #settings-close {
+    position: absolute;
+    top: 16px; right: 20px;
+    width: 36px; height: 36px;
+    background: var(--surface2);
+    border: none;
+    border-radius: 50%;
+    color: var(--text);
+    font-size: 18px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .settings-section {
+    margin-bottom: 28px;
+  }
+
+  .settings-label {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    font-family: var(--font-mono);
+  }
+
+  .settings-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 8px;
+  }
+
+  .settings-row-label {
+    font-size: 15px;
+    color: var(--text);
+  }
+
+  /* Toggle */
+  .toggle {
+    width: 44px; height: 26px;
+    background: var(--surface2);
+    border-radius: 13px;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+  .toggle.on { background: var(--accent); }
+  .toggle::after {
+    content: '';
+    position: absolute;
+    width: 20px; height: 20px;
+    background: var(--bg);
+    border-radius: 50%;
+    top: 3px; left: 3px;
+    transition: transform 0.2s;
+  }
+  .toggle.on::after { transform: translateX(18px); background: #111; }
+
+  /* Color swatches */
+  .color-swatches {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .swatch {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 3px solid transparent;
+    transition: transform 0.15s, border-color 0.15s;
+  }
+
+  .swatch.active {
+    border-color: var(--text);
+    transform: scale(1.15);
+  }
+
+  /* ─── CONTROL BAR ─── */
+  #control-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 14px;
+    gap: 8px;
+  }
+
+  .ctrl-btn {
+    width: 36px; height: 36px;
+    background: var(--surface);
+    border: none;
+    border-radius: 10px;
+    color: var(--text-dim);
+    font-size: 16px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s, transform 0.1s;
+  }
+
+  .ctrl-btn:active { transform: scale(0.9); background: var(--surface2); }
+
+  #handedness-indicator {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+  }
+
+  /* ─── CALCULATOR WRAPPER ─── */
+  #calc-wrapper {
+    flex: 1;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: env(safe-area-inset-bottom, 12px);
+    position: relative;
+    overflow: hidden;
+    touch-action: none;
+  }
+
+  /* ─── BUTTON GRID ─── */
+  #btn-grid {
+    display: grid;
+    grid-template-columns: repeat(4, var(--btn-size));
+    grid-template-rows: repeat(5, var(--btn-size));
+    gap: var(--gap);
+    position: absolute;
+    transition: left 0.3s cubic-bezier(0.32,0.72,0,1),
+                bottom 0.3s cubic-bezier(0.32,0.72,0,1),
+                transform 0.3s cubic-bezier(0.32,0.72,0,1);
+    cursor: grab;
+    user-select: none;
+  }
+
+  #btn-grid.dragging { cursor: grabbing; transition: none; }
+  #btn-grid.flip { transform: scaleX(-1); }
+
+  /* ─── BUTTONS ─── */
+  .btn {
+    width: var(--btn-size);
+    height: var(--btn-size);
+    border: none;
+    border-radius: var(--radius);
+    font-family: var(--font-mono);
+    font-size: 20px;
+    font-weight: 400;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.1s, filter 0.1s;
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: none;
+  }
+
+  .btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: white;
+    opacity: 0;
+    border-radius: inherit;
+    transition: opacity 0.15s;
+  }
+
+  .btn:active::after { opacity: 0.08; }
+  .btn:active { transform: scale(0.93); }
+
+  .btn-num {
+    background: var(--btn-num);
+    color: var(--text);
+    box-shadow: 0 4px 12px var(--shadow), inset 0 1px 0 rgba(255,255,255,0.06);
+  }
+
+  .btn-op {
+    background: var(--btn-op);
+    color: var(--accent);
+    font-size: 22px;
+    box-shadow: 0 4px 12px var(--shadow);
+  }
+
+  .btn-fn {
+    background: var(--btn-fn);
+    color: var(--text-dim);
+    font-size: 15px;
+    box-shadow: 0 4px 12px var(--shadow);
+  }
+
+  .btn-eq {
+    background: var(--accent);
+    color: #111;
+    font-size: 24px;
+    font-weight: 500;
+    box-shadow: 0 6px 20px rgba(232,255,90,0.3);
+  }
+
+  .btn-eq:active { box-shadow: 0 2px 8px rgba(232,255,90,0.2); }
+
+  .btn-zero { grid-column: span 2; width: calc(var(--btn-size) * 2 + var(--gap)); justify-content: flex-start; padding-left: calc(var(--btn-size) * 0.35); }
+
+  /* flip label inside btn when grid flipped */
+  #btn-grid.flip .btn { transform-origin: center; }
+  #btn-grid.flip .btn:active { transform: scale(0.93); }
+
+  /* ─── EDIT MODE ─── */
+  #btn-grid.edit-mode { cursor: move; }
+  #btn-grid.edit-mode .btn { pointer-events: none; }
+  #btn-grid.edit-mode::before {
+    content: '';
+    position: absolute;
+    inset: -20px;
+    border: 2px dashed var(--accent);
+    border-radius: 18px;
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  #edit-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    background: linear-gradient(180deg, var(--accent-dim) 0%, transparent 100%);
+    padding: 12px 16px;
+    display: none;
+    gap: 8px;
+    z-index: 20;
+    flex-wrap: wrap;
+  }
+
+  #edit-overlay.visible { display: flex; }
+
+  .edit-btn {
+    height: 32px;
+    padding: 0 14px;
+    background: var(--surface);
+    border: 1px solid var(--surface2);
+    border-radius: 20px;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 6px;
+    transition: background 0.15s;
+  }
+
+  .edit-btn:active { background: var(--surface2); }
+  .edit-btn.accent { background: var(--accent); color: #111; border-color: transparent; }
+
+  /* ─── SIZE CONTROLS ─── */
+  #size-controls {
+    position: absolute;
+    bottom: calc(env(safe-area-inset-bottom, 12px) + 10px);
+    left: 50%;
+    transform: translateX(-50%);
+    display: none;
+    background: var(--surface);
+    border-radius: 20px;
+    padding: 8px 16px;
+    gap: 12px;
+    z-index: 25;
+    align-items: center;
+    box-shadow: 0 4px 20px var(--shadow);
+  }
+
+  #size-controls.visible { display: flex; }
+
+  .size-ctrl {
+    width: 32px; height: 32px;
+    background: var(--surface2);
+    border: none;
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 18px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .size-ctrl:active { opacity: 0.7; }
+
+  #size-label {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--text-dim);
+    min-width: 50px;
+    text-align: center;
+  }
+
+  /* ─── HAND SWITCH ─── */
+  #hand-switch {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 30;
+    transition: left 0.3s, right 0.3s;
+  }
+
+  #hand-switch-btn {
+    width: 28px;
+    height: 64px;
+    background: var(--surface2);
+    border: none;
+    border-radius: 14px;
+    color: var(--text-dim);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  #hand-switch-btn:active { background: var(--accent); color: #111; }
+
+  #hand-switch-btn span {
+    display: block;
+    width: 4px; height: 4px;
+    background: currentColor;
+    border-radius: 50%;
+  }
+
+  .hand-arrow {
+    font-size: 14px;
+    line-height: 1;
+  }
+
+  /* ─── SWIPE HINT ─── */
+  #swipe-hint {
+    position: absolute;
+    bottom: calc(env(safe-area-inset-bottom, 12px) + 4px);
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    opacity: 0.3;
+    pointer-events: none;
+    transition: opacity 0.5s;
+  }
+
+  #swipe-hint.hidden { opacity: 0; }
+
+  .hint-line {
+    width: 36px; height: 3px;
+    background: var(--text-dim);
+    border-radius: 2px;
+  }
+
+  /* ─── RIPPLE ─── */
+  @keyframes ripple {
+    to { transform: scale(4); opacity: 0; }
+  }
+
+  .ripple-effect {
+    position: absolute;
+    width: 20px; height: 20px;
+    background: rgba(255,255,255,0.25);
+    border-radius: 50%;
+    transform: scale(0);
+    animation: ripple 0.4s linear;
+    pointer-events: none;
+    margin-left: -10px;
+    margin-top: -10px;
+  }
+
+  /* ─── ANIMATIONS ─── */
+  @keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  #btn-grid { animation: slideUp 0.4s ease both; }
+
+  /* ─── ERROR STATE ─── */
+  #result.error { color: #ff6b6b; }
+</style>
+</head>
+<body>
+<div id="app" data-theme="dark">
+
+  <!-- 履歴パネル -->
+  <div id="history-panel">
+    <div id="history-title">計算履歴</div>
+    <button id="history-close">✕</button>
+    <div id="history-list"></div>
+  </div>
+
+  <!-- 設定パネル -->
+  <div id="settings-panel">
+    <button id="settings-close">✕</button>
+    <div class="settings-section">
+      <div class="settings-label">外観</div>
+      <div class="settings-row">
+        <span class="settings-row-label">ダークモード</span>
+        <div class="toggle on" id="toggle-theme"></div>
+      </div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-label">アクセントカラー</div>
+      <div class="color-swatches">
+        <div class="swatch active" style="background:#e8ff5a" data-color="#e8ff5a"></div>
+        <div class="swatch" style="background:#7affc4" data-color="#7affc4"></div>
+        <div class="swatch" style="background:#ff8c69" data-color="#ff8c69"></div>
+        <div class="swatch" style="background:#a78bfa" data-color="#a78bfa"></div>
+        <div class="swatch" style="background:#38bdf8" data-color="#38bdf8"></div>
+        <div class="swatch" style="background:#fb7185" data-color="#fb7185"></div>
+        <div class="swatch" style="background:#f9a825" data-color="#f9a825"></div>
+        <div class="swatch" style="background:#e2e8f0" data-color="#e2e8f0"></div>
+      </div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-label">操作</div>
+      <div class="settings-row">
+        <span class="settings-row-label">触覚フィードバック</span>
+        <div class="toggle on" id="toggle-haptic"></div>
+      </div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-label">バージョン</div>
+      <div class="settings-row">
+        <span class="settings-row-label">片手電卓</span>
+        <span style="color:var(--text-dim);font-family:var(--font-mono);font-size:13px">v1.0</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 表示エリア -->
+  <div id="display-area">
+    <div id="expr"></div>
+    <div id="result">0</div>
+  </div>
+
+  <div id="divider"></div>
+
+  <!-- コントロールバー -->
+  <div id="control-bar">
+    <button class="ctrl-btn" id="btn-history" title="履歴">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.5"/>
+      </svg>
+    </button>
+    <div id="handedness-indicator">右手モード</div>
+    <button class="ctrl-btn" id="btn-edit" title="レイアウト編集">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+      </svg>
+    </button>
+    <button class="ctrl-btn" id="btn-settings" title="設定">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- 編集オーバーレイ -->
+  <div id="edit-overlay">
+    <button class="edit-btn" id="edit-size-toggle">⊞ サイズ調整</button>
+    <button class="edit-btn" id="edit-undo">↩ 元に戻す</button>
+    <button class="edit-btn" id="edit-reset">⊘ リセット</button>
+    <button class="edit-btn accent" id="edit-done">完了</button>
+  </div>
+
+  <!-- サイズコントロール -->
+  <div id="size-controls">
+    <button class="size-ctrl" id="size-down">−</button>
+    <span id="size-label">70 px</span>
+    <button class="size-ctrl" id="size-up">＋</button>
+  </div>
+
+  <!-- 計算エリア -->
+  <div id="calc-wrapper">
+    <!-- 手モード切替ボタン -->
+    <div id="hand-switch" style="left:4px">
+      <button id="hand-switch-btn" title="左右手切替">
+        <div class="hand-arrow">◀</div>
+        <span></span><span></span><span></span>
+        <div class="hand-arrow" style="transform:scaleX(-1)">◀</div>
+      </button>
+    </div>
+
+    <!-- ボタングリッド -->
+    <div id="btn-grid">
+      <!-- Row 1: AC, ±, %, ÷ -->
+      <button class="btn btn-fn" data-val="AC">AC</button>
+      <button class="btn btn-fn" data-val="±">±</button>
+      <button class="btn btn-fn" data-val="%">%</button>
+      <button class="btn btn-op" data-val="÷">÷</button>
+      <!-- Row 2: 7, 8, 9, × -->
+      <button class="btn btn-num" data-val="7">7</button>
+      <button class="btn btn-num" data-val="8">8</button>
+      <button class="btn btn-num" data-val="9">9</button>
+      <button class="btn btn-op" data-val="×">×</button>
+      <!-- Row 3: 4, 5, 6, - -->
+      <button class="btn btn-num" data-val="4">4</button>
+      <button class="btn btn-num" data-val="5">5</button>
+      <button class="btn btn-num" data-val="6">6</button>
+      <button class="btn btn-op" data-val="−">−</button>
+      <!-- Row 4: 1, 2, 3, + -->
+      <button class="btn btn-num" data-val="1">1</button>
+      <button class="btn btn-num" data-val="2">2</button>
+      <button class="btn btn-num" data-val="3">3</button>
+      <button class="btn btn-op" data-val="+">+</button>
+      <!-- Row 5: 0(wide), ., DEL, = -->
+      <button class="btn btn-num btn-zero" data-val="0">0</button>
+      <button class="btn btn-fn" data-val=".">.</button>
+      <button class="btn btn-fn" data-val="DEL">⌫</button>
+      <button class="btn btn-eq" data-val="=">=</button>
+    </div>
+
+    <!-- スワイプヒント -->
+    <div id="swipe-hint">
+      <div class="hint-line"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(() => {
+  // ─── STATE ───
+  const S = {
+    expr: '',
+    result: '0',
+    hasResult: false,
+    history: [],
+    isRight: true,
+    editMode: false,
+    haptic: true,
+    theme: 'dark',
+    accent: '#e8ff5a',
+    btnSize: 70,
+    gap: 10,
+    gridPos: { right: { x: null, y: null }, left: { x: null, y: null } },
+    undoStack: [],
+    showSizeCtrl: false,
+  };
+
+  // ─── ELEMENTS ───
+  const $expr = document.getElementById('expr');
+  const $result = document.getElementById('result');
+  const $grid = document.getElementById('btn-grid');
+  const $wrapper = document.getElementById('calc-wrapper');
+  const $editOverlay = document.getElementById('edit-overlay');
+  const $sizeControls = document.getElementById('size-controls');
+  const $sizeLabel = document.getElementById('size-label');
+  const $handSwitch = document.getElementById('hand-switch');
+  const $handSwitchBtn = document.getElementById('hand-switch-btn');
+  const $handIndicator = document.getElementById('handedness-indicator');
+  const $historyPanel = document.getElementById('history-panel');
+  const $historyList = document.getElementById('history-list');
+  const $settingsPanel = document.getElementById('settings-panel');
+  const $app = document.getElementById('app');
+
+  // ─── LOAD PREFS ───
+  function loadPrefs() {
+    try {
+      const saved = JSON.parse(localStorage.getItem('calc_prefs') || '{}');
+      if (saved.theme) S.theme = saved.theme;
+      if (saved.accent) S.accent = saved.accent;
+      if (saved.haptic !== undefined) S.haptic = saved.haptic;
+      if (saved.isRight !== undefined) S.isRight = saved.isRight;
+      if (saved.btnSize) S.btnSize = saved.btnSize;
+      if (saved.gap) S.gap = saved.gap;
+      if (saved.gridPos) S.gridPos = saved.gridPos;
+      if (saved.history) S.history = saved.history;
+    } catch(e) {}
+  }
+
+  function savePrefs() {
+    try {
+      localStorage.setItem('calc_prefs', JSON.stringify({
+        theme: S.theme, accent: S.accent, haptic: S.haptic,
+        isRight: S.isRight, btnSize: S.btnSize, gap: S.gap,
+        gridPos: S.gridPos, history: S.history
+      }));
+    } catch(e) {}
+  }
+
+  // ─── APPLY THEME/ACCENT ───
+  function applyTheme() {
+    $app.dataset.theme = S.theme;
+    document.getElementById('toggle-theme').classList.toggle('on', S.theme === 'dark');
+  }
+
+  function applyAccent() {
+    document.documentElement.style.setProperty('--accent', S.accent);
+    // accent-dim
+    const hex = S.accent.replace('#','');
+    const r = parseInt(hex.substr(0,2),16);
+    const g = parseInt(hex.substr(2,2),16);
+    const b = parseInt(hex.substr(4,2),16);
+    document.documentElement.style.setProperty('--accent-dim', `rgba(${r},${g},${b},0.15)`);
+    // eq btn shadow
+    document.documentElement.style.setProperty('--eq-shadow', `rgba(${r},${g},${b},0.3)`);
+    // mark active swatch
+    document.querySelectorAll('.swatch').forEach(s => {
+      s.classList.toggle('active', s.dataset.color === S.accent);
+    });
+  }
+
+  // ─── GRID SIZE ───
+  function applyGridSize() {
+    document.documentElement.style.setProperty('--btn-size', S.btnSize + 'px');
+    document.documentElement.style.setProperty('--gap', S.gap + 'px');
+    $sizeLabel.textContent = S.btnSize + ' px';
+    // Update zero button width
+    const zeroBtn = $grid.querySelector('.btn-zero');
+    if (zeroBtn) {
+      zeroBtn.style.width = (S.btnSize * 2 + S.gap) + 'px';
+    }
+  }
+
+  // ─── GRID POSITION ───
+  function getDefaultPos() {
+    const wr = $wrapper.getBoundingClientRect();
+    const gridW = S.btnSize * 4 + S.gap * 3;
+    const gridH = S.btnSize * 5 + S.gap * 4;
+    const margin = 16;
+    const x = S.isRight
+      ? wr.width - gridW - margin
+      : margin;
+    const y = wr.height - gridH - 20;
+    return { x, y };
+  }
+
+  function posKey() { return S.isRight ? 'right' : 'left'; }
+
+  function applyGridPos() {
+    const pos = S.gridPos[posKey()];
+    let x, y;
+    if (pos.x === null) {
+      const d = getDefaultPos();
+      x = d.x; y = d.y;
+    } else {
+      x = pos.x; y = pos.y;
+    }
+    $grid.style.left = x + 'px';
+    $grid.style.bottom = 'auto';
+    $grid.style.top = y + 'px';
+  }
+
+  // ─── HANDEDNESS ───
+  function setHand(isRight) {
+    S.isRight = isRight;
+    $handIndicator.textContent = isRight ? '右手モード' : '左手モード';
+
+    // flip grid
+    $grid.classList.toggle('flip', !isRight);
+
+    // move switch button
+    if (isRight) {
+      $handSwitch.style.left = '4px';
+      $handSwitch.style.right = 'auto';
+    } else {
+      $handSwitch.style.right = '4px';
+      $handSwitch.style.left = 'auto';
+    }
+
+    applyGridPos();
+    savePrefs();
+  }
+
+  // ─── HAPTIC ───
+  function vibrate(ms = 10) {
+    if (!S.haptic) return;
+    if (navigator.vibrate) navigator.vibrate(ms);
+  }
+
+  // ─── CALC LOGIC ───
+  function formatNum(n) {
+    if (!isFinite(n)) return 'エラー';
+    // Remove trailing zeros after decimal
+    let s = parseFloat(n.toPrecision(12)).toString();
+    return s;
+  }
+
+  function evaluate() {
+    try {
+      // Replace symbols
+      let expr = S.expr
+        .replace(/×/g, '*')
+        .replace(/÷/g, '/')
+        .replace(/−/g, '-');
+
+      // Handle % — treat as /100
+      expr = expr.replace(/(\d+\.?\d*)%/g, '($1/100)');
+
+      // Validate
+      if (!expr || /[+\-*/.]$/.test(expr)) return null;
+
+      const result = Function('"use strict"; return (' + expr + ')')();
+      return formatNum(result);
+    } catch(e) {
+      return null;
+    }
+  }
+
+  function updateDisplay() {
+    $expr.textContent = S.expr || '';
+    $result.textContent = S.result;
+    $result.classList.remove('error');
+  }
+
+  function handleBtn(val) {
+    vibrate(8);
+
+    const ops = ['÷', '×', '−', '+'];
+    const isOp = ops.includes(val);
+
+    switch(val) {
+      case 'AC':
+        S.expr = '';
+        S.result = '0';
+        S.hasResult = false;
+        break;
+
+      case 'DEL':
+        if (S.hasResult) {
+          S.expr = '';
+          S.result = '0';
+          S.hasResult = false;
+        } else {
+          S.expr = S.expr.slice(0, -1);
+          if (!S.expr) S.result = '0';
+          else {
+            const r = evaluate();
+            if (r !== null) S.result = r;
+          }
+        }
+        break;
+
+      case '±':
+        if (S.hasResult) {
+          const n = parseFloat(S.result);
+          S.result = formatNum(-n);
+          S.expr = S.result;
+          S.hasResult = false;
+        } else if (S.expr) {
+          // toggle leading minus on last number
+          const match = S.expr.match(/^(-?)(\d.*)$/);
+          if (match) {
+            S.expr = match[1] ? match[2] : '-' + match[2];
+          } else {
+            S.expr = S.expr.startsWith('-') ? S.expr.slice(1) : '-' + S.expr;
+          }
+          const r = evaluate();
+          if (r !== null) S.result = r;
+        }
+        break;
+
+      case '%':
+        if (S.expr) {
+          S.expr += '%';
+          const r = evaluate();
+          if (r !== null) S.result = r;
+        }
+        break;
+
+      case '=':
+        if (!S.expr) break;
+        const res = evaluate();
+        if (res === null) {
+          S.result = 'エラー';
+          $result.classList.add('error');
+          vibrate(30);
+        } else {
+          // save to history
+          S.history.unshift({ expr: S.expr, result: res });
+          if (S.history.length > 10) S.history.pop();
+          S.result = res;
+          S.expr = res;
+          S.hasResult = true;
+          // pop animation
+          $result.classList.remove('pop');
+          void $result.offsetWidth;
+          $result.classList.add('pop');
+          vibrate(15);
+        }
+        savePrefs();
+        break;
+
+      case '.':
+        if (S.hasResult) { S.expr = '0.'; S.result = '0.'; S.hasResult = false; break; }
+        // Don't add second dot to current number
+        const lastNum = S.expr.split(/[+\-×÷]/).pop();
+        if (!lastNum.includes('.')) {
+          if (!S.expr || ops.some(o => S.expr.endsWith(o))) S.expr += '0';
+          S.expr += '.';
+          S.result = S.expr;
+        }
+        break;
+
+      default:
+        if (isOp) {
+          S.hasResult = false;
+          // Replace last op if ends with op
+          if (S.expr && ops.some(o => S.expr.endsWith(o))) {
+            S.expr = S.expr.slice(0, -1) + val;
+          } else if (S.expr) {
+            S.expr += val;
+          } else {
+            if (val === '−') S.expr = '−';
+          }
+          const r = evaluate();
+          if (r !== null) S.result = r;
+        } else {
+          // digit
+          if (S.hasResult) { S.expr = ''; S.hasResult = false; }
+          // Prevent leading zeros
+          if (val !== '0' || S.expr !== '0') {
+            if (S.expr === '0') S.expr = val;
+            else S.expr += val;
+          }
+          const r = evaluate();
+          if (r !== null) S.result = r;
+          else S.result = S.expr;
+        }
+    }
+
+    updateDisplay();
+  }
+
+  // ─── RIPPLE ───
+  function addRipple(btn, e) {
+    const r = document.createElement('div');
+    r.className = 'ripple-effect';
+    const rect = btn.getBoundingClientRect();
+    const x = (e.clientX || e.touches?.[0]?.clientX || rect.left + rect.width/2) - rect.left;
+    const y = (e.clientY || e.touches?.[0]?.clientY || rect.top + rect.height/2) - rect.top;
+    r.style.left = x + 'px';
+    r.style.top = y + 'px';
+    btn.appendChild(r);
+    r.addEventListener('animationend', () => r.remove());
+  }
+
+  // ─── BUTTON EVENTS ───
+  $grid.addEventListener('pointerdown', e => {
+    if (S.editMode) return;
+    const btn = e.target.closest('.btn');
+    if (!btn) return;
+    addRipple(btn, e);
+    handleBtn(btn.dataset.val);
+  });
+
+  // ─── DRAG (edit mode) ───
+  let dragState = null;
+
+  $grid.addEventListener('pointerdown', e => {
+    if (!S.editMode) return;
+    e.preventDefault();
+    $grid.setPointerCapture(e.pointerId);
+    const rect = $grid.getBoundingClientRect();
+    dragState = {
+      startX: e.clientX - rect.left,
+      startY: e.clientY - rect.top,
+      origX: parseInt($grid.style.left) || 0,
+      origY: parseInt($grid.style.top) || 0,
+    };
+    $grid.classList.add('dragging');
+    // save to undo
+    S.undoStack.push({ x: dragState.origX, y: dragState.origY });
+    if (S.undoStack.length > 20) S.undoStack.shift();
+  });
+
+  $grid.addEventListener('pointermove', e => {
+    if (!dragState) return;
+    e.preventDefault();
+    const wr = $wrapper.getBoundingClientRect();
+    const gridRect = $grid.getBoundingClientRect();
+    const gridW = gridRect.width;
+    const gridH = gridRect.height;
+
+    let newX = e.clientX - wr.left - dragState.startX;
+    let newY = e.clientY - wr.top - dragState.startY;
+
+    // Clamp
+    newX = Math.max(-20, Math.min(wr.width - gridW + 20, newX));
+    newY = Math.max(0, Math.min(wr.height - gridH, newY));
+
+    $grid.style.left = newX + 'px';
+    $grid.style.top = newY + 'px';
+  });
+
+  $grid.addEventListener('pointerup', e => {
+    if (!dragState) return;
+    $grid.releasePointerCapture(e.pointerId);
+    $grid.classList.remove('dragging');
+
+    S.gridPos[posKey()] = {
+      x: parseInt($grid.style.left) || 0,
+      y: parseInt($grid.style.top) || 0
+    };
+    dragState = null;
+    savePrefs();
+  });
+
+  // ─── EDIT MODE ───
+  document.getElementById('btn-edit').addEventListener('click', () => {
+    S.editMode = true;
+    $grid.classList.add('edit-mode');
+    $editOverlay.classList.add('visible');
+    $sizeControls.classList.remove('visible');
+  });
+
+  document.getElementById('edit-done').addEventListener('click', () => {
+    S.editMode = false;
+    $grid.classList.remove('edit-mode');
+    $editOverlay.classList.remove('visible');
+    $sizeControls.classList.remove('visible');
+    savePrefs();
+  });
+
+  document.getElementById('edit-undo').addEventListener('click', () => {
+    if (S.undoStack.length === 0) return;
+    const prev = S.undoStack.pop();
+    $grid.style.left = prev.x + 'px';
+    $grid.style.top = prev.y + 'px';
+    S.gridPos[posKey()] = { x: prev.x, y: prev.y };
+  });
+
+  document.getElementById('edit-reset').addEventListener('click', () => {
+    S.gridPos[posKey()] = { x: null, y: null };
+    applyGridPos();
+    savePrefs();
+  });
+
+  document.getElementById('edit-size-toggle').addEventListener('click', () => {
+    S.showSizeCtrl = !S.showSizeCtrl;
+    $sizeControls.classList.toggle('visible', S.showSizeCtrl);
+  });
+
+  document.getElementById('size-up').addEventListener('click', () => {
+    S.btnSize = Math.min(90, S.btnSize + 5);
+    S.gap = Math.min(14, Math.round(S.btnSize * 0.14));
+    applyGridSize();
+    applyGridPos();
+    savePrefs();
+  });
+
+  document.getElementById('size-down').addEventListener('click', () => {
+    S.btnSize = Math.max(52, S.btnSize - 5);
+    S.gap = Math.max(6, Math.round(S.btnSize * 0.12));
+    applyGridSize();
+    applyGridPos();
+    savePrefs();
+  });
+
+  // ─── HAND SWITCH ───
+  $handSwitchBtn.addEventListener('click', () => {
+    vibrate(10);
+    setHand(!S.isRight);
+  });
+
+  // ─── HISTORY ───
+  document.getElementById('btn-history').addEventListener('click', () => {
+    renderHistory();
+    $historyPanel.classList.add('open');
+  });
+
+  document.getElementById('history-close').addEventListener('click', () => {
+    $historyPanel.classList.remove('open');
+  });
+
+  function renderHistory() {
+    $historyList.innerHTML = '';
+    if (S.history.length === 0) {
+      $historyList.innerHTML = '<div style="color:var(--text-dim);font-family:var(--font-mono);font-size:14px;padding:20px;text-align:center">履歴がありません</div>';
+      return;
+    }
+    S.history.forEach(h => {
+      const item = document.createElement('div');
+      item.className = 'history-item';
+      item.innerHTML = `<div class="history-expr">${h.expr}</div><div class="history-result">= ${h.result}</div>`;
+      item.addEventListener('click', () => {
+        S.expr = h.result;
+        S.result = h.result;
+        S.hasResult = true;
+        updateDisplay();
+        $historyPanel.classList.remove('open');
+      });
+      $historyList.appendChild(item);
+    });
+  }
+
+  // Swipe up to open history
+  let swipeStartY = null;
+  $wrapper.addEventListener('touchstart', e => {
+    if (S.editMode) return;
+    swipeStartY = e.touches[0].clientY;
+  }, { passive: true });
+
+  $wrapper.addEventListener('touchend', e => {
+    if (swipeStartY === null || S.editMode) return;
+    const dy = swipeStartY - e.changedTouches[0].clientY;
+    if (dy > 60) {
+      renderHistory();
+      $historyPanel.classList.add('open');
+    }
+    swipeStartY = null;
+  }, { passive: true });
+
+  // Hide swipe hint after first interaction
+  let hintHidden = false;
+  document.addEventListener('pointerdown', () => {
+    if (!hintHidden) {
+      hintHidden = true;
+      document.getElementById('swipe-hint').classList.add('hidden');
+    }
+  }, { once: true });
+
+  // ─── SETTINGS ───
+  document.getElementById('btn-settings').addEventListener('click', () => {
+    $settingsPanel.classList.add('open');
+  });
+
+  document.getElementById('settings-close').addEventListener('click', () => {
+    $settingsPanel.classList.remove('open');
+  });
+
+  document.getElementById('toggle-theme').addEventListener('click', function() {
+    S.theme = S.theme === 'dark' ? 'light' : 'dark';
+    applyTheme();
+    savePrefs();
+  });
+
+  document.getElementById('toggle-haptic').addEventListener('click', function() {
+    S.haptic = !S.haptic;
+    this.classList.toggle('on', S.haptic);
+    savePrefs();
+  });
+
+  document.querySelectorAll('.swatch').forEach(s => {
+    s.addEventListener('click', () => {
+      S.accent = s.dataset.color;
+      applyAccent();
+      savePrefs();
+    });
+  });
+
+  // ─── KEYBOARD ───
+  document.addEventListener('keydown', e => {
+    if ($historyPanel.classList.contains('open') || $settingsPanel.classList.contains('open')) return;
+    const map = {
+      '0':'0','1':'1','2':'2','3':'3','4':'4',
+      '5':'5','6':'6','7':'7','8':'8','9':'9',
+      '+':'+','-':'−','*':'×','/':'÷',
+      'Enter':'=','=':'=','.':'.',
+      '%':'%','Escape':'AC','Backspace':'DEL'
+    };
+    if (map[e.key]) { e.preventDefault(); handleBtn(map[e.key]); }
+  });
+
+  // ─── RESIZE ───
+  let resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      if (S.gridPos[posKey()].x === null) applyGridPos();
+    }, 100);
+  });
+
+  // ─── INIT ───
+  function init() {
+    loadPrefs();
+    applyTheme();
+    applyAccent();
+    applyGridSize();
+    document.getElementById('toggle-haptic').classList.toggle('on', S.haptic);
+
+    // Wait for layout then position grid
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setHand(S.isRight);
+        updateDisplay();
+      });
+    });
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>

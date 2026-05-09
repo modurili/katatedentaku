@@ -21,7 +21,6 @@
     --accent-dim: rgba(232,255,90,0.15);
     --btn-num: #1e1e1e;
     --btn-op: #2a2a2a;
-    --btn-eq: var(--accent);
     --btn-fn: #222;
     --shadow: rgba(0,0,0,0.5);
     --radius: 14px;
@@ -29,7 +28,6 @@
     --btn-size: 70px;
     --font-mono: 'DM Mono', monospace;
     --font-jp: 'Noto Sans JP', sans-serif;
-    --transition: 0.25s cubic-bezier(0.34,1.56,0.64,1);
   }
 
   [data-theme="light"] {
@@ -65,7 +63,7 @@
   /* ─── DISPLAY ─── */
   #display-area {
     flex: 0 0 auto;
-    padding: 12px 20px 8px;
+    padding: 12px 20px 6px;
     background: var(--bg);
     position: relative;
     z-index: 10;
@@ -93,17 +91,15 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    transition: transform 0.15s ease, opacity 0.15s ease;
     letter-spacing: -0.02em;
   }
 
-  #result.pop {
-    animation: pop 0.2s cubic-bezier(0.34,1.56,0.64,1);
-  }
+  #result.pop { animation: pop 0.2s cubic-bezier(0.34,1.56,0.64,1); }
+  #result.error { color: #ff6b6b; }
 
   @keyframes pop {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.04); }
+    0%   { transform: scale(1); }
+    50%  { transform: scale(1.04); }
     100% { transform: scale(1); }
   }
 
@@ -113,7 +109,59 @@
     margin: 4px 0;
   }
 
-  /* ─── HISTORY PANEL ─── */
+  /* ─── INLINE HISTORY STRIP ─── */
+  #history-strip {
+    flex: 0 0 auto;
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 0.3s ease;
+  }
+
+  #history-strip.has-items {
+    max-height: 120px; /* shows ~2-3 items */
+  }
+
+  #history-strip-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    padding: 4px 12px 4px;
+    overflow-y: auto;
+    max-height: 120px;
+  }
+
+  .strip-item {
+    display: flex;
+    align-items: baseline;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 3px 6px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.12s;
+    flex-shrink: 0;
+  }
+
+  .strip-item:active { background: var(--surface); }
+
+  .strip-expr {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-dim);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 55%;
+  }
+
+  .strip-result {
+    font-family: var(--font-mono);
+    font-size: 15px;
+    color: var(--text-dim);
+    flex-shrink: 0;
+  }
+
+  /* ─── HISTORY FULL PANEL ─── */
   #history-panel {
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
@@ -127,9 +175,7 @@
     gap: 10px;
   }
 
-  #history-panel.open {
-    transform: translateY(0);
-  }
+  #history-panel.open { transform: translateY(0); }
 
   #history-title {
     font-family: var(--font-mono);
@@ -212,9 +258,7 @@
     display: flex; align-items: center; justify-content: center;
   }
 
-  .settings-section {
-    margin-bottom: 28px;
-  }
+  .settings-section { margin-bottom: 28px; }
 
   .settings-label {
     font-size: 11px;
@@ -235,9 +279,61 @@
     margin-bottom: 8px;
   }
 
-  .settings-row-label {
+  .settings-row-label { font-size: 15px; color: var(--text); }
+
+  .settings-row a {
+    color: var(--accent);
+    text-decoration: none;
     font-size: 15px;
-    color: var(--text);
+  }
+
+  /* Share button in settings */
+  .settings-share-btn {
+    width: 100%;
+    padding: 14px 16px;
+    background: var(--surface);
+    border: none;
+    border-radius: 12px;
+    color: var(--accent);
+    font-family: var(--font-jp);
+    font-size: 15px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+    transition: background 0.15s;
+  }
+
+  .settings-share-btn:active { background: var(--surface2); }
+
+  /* Changelog */
+  .changelog-item {
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin-bottom: 8px;
+  }
+
+  .changelog-version {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+    margin-bottom: 4px;
+  }
+
+  .changelog-date {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+  }
+
+  .changelog-notes {
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.6;
   }
 
   /* Toggle */
@@ -249,6 +345,7 @@
     cursor: pointer;
     transition: background 0.2s;
     flex-shrink: 0;
+    border: none;
   }
   .toggle.on { background: var(--accent); }
   .toggle::after {
@@ -263,11 +360,7 @@
   .toggle.on::after { transform: translateX(18px); background: #111; }
 
   /* Color swatches */
-  .color-swatches {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-  }
+  .color-swatches { display: flex; gap: 10px; flex-wrap: wrap; }
 
   .swatch {
     width: 36px; height: 36px;
@@ -277,42 +370,9 @@
     transition: transform 0.15s, border-color 0.15s;
   }
 
-  .swatch.active {
-    border-color: var(--text);
-    transform: scale(1.15);
-  }
+  .swatch.active { border-color: var(--text); transform: scale(1.15); }
 
-  /* ─── CONTROL BAR ─── */
-  #control-bar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 6px 14px;
-    gap: 8px;
-  }
-
-  .ctrl-btn {
-    width: 36px; height: 36px;
-    background: var(--surface);
-    border: none;
-    border-radius: 10px;
-    color: var(--text-dim);
-    font-size: 16px;
-    cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    transition: background 0.15s, transform 0.1s;
-  }
-
-  .ctrl-btn:active { transform: scale(0.9); background: var(--surface2); }
-
-  #handedness-indicator {
-    font-family: var(--font-mono);
-    font-size: 11px;
-    color: var(--text-dim);
-    letter-spacing: 0.08em;
-  }
-
-  /* ─── CALCULATOR WRAPPER ─── */
+  /* ─── CALC WRAPPER ─── */
   #calc-wrapper {
     flex: 1;
     display: flex;
@@ -324,6 +384,64 @@
     touch-action: none;
   }
 
+  /* ─── SIDE PANEL (hand switch + ctrl buttons) ─── */
+  #side-panel {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    transition: left 0.3s cubic-bezier(0.32,0.72,0,1),
+                right 0.3s cubic-bezier(0.32,0.72,0,1);
+  }
+
+  /* Hand switch button */
+  #hand-switch-btn {
+    width: 28px;
+    height: 52px;
+    background: var(--surface2);
+    border: none;
+    border-radius: 14px;
+    color: var(--text-dim);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    cursor: pointer;
+    transition: background 0.15s;
+    font-size: 11px;
+  }
+
+  #hand-switch-btn:active { background: var(--accent); color: #111; }
+
+  #hand-switch-btn span {
+    display: block;
+    width: 4px; height: 4px;
+    background: currentColor;
+    border-radius: 50%;
+  }
+
+  /* Side ctrl buttons */
+  .side-ctrl {
+    width: 28px; height: 28px;
+    background: var(--surface2);
+    border: none;
+    border-radius: 8px;
+    color: var(--text-dim);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s, transform 0.1s;
+    padding: 0;
+  }
+
+  .side-ctrl:active { background: var(--surface); transform: scale(0.9); }
+
+  .side-ctrl svg { width: 14px; height: 14px; }
+
   /* ─── BUTTON GRID ─── */
   #btn-grid {
     display: grid;
@@ -332,14 +450,20 @@
     gap: var(--gap);
     position: absolute;
     transition: left 0.3s cubic-bezier(0.32,0.72,0,1),
-                bottom 0.3s cubic-bezier(0.32,0.72,0,1),
+                top 0.3s cubic-bezier(0.32,0.72,0,1),
                 transform 0.3s cubic-bezier(0.32,0.72,0,1);
     cursor: grab;
     user-select: none;
+    animation: slideUp 0.4s ease both;
   }
 
   #btn-grid.dragging { cursor: grabbing; transition: none; }
   #btn-grid.flip { transform: scaleX(-1); }
+
+  @keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+  }
 
   /* ─── BUTTONS ─── */
   .btn {
@@ -356,7 +480,7 @@
     justify-content: center;
     position: relative;
     overflow: hidden;
-    transition: transform 0.1s, filter 0.1s;
+    transition: transform 0.1s;
     -webkit-user-select: none;
     user-select: none;
     touch-action: none;
@@ -395,23 +519,15 @@
     box-shadow: 0 4px 12px var(--shadow);
   }
 
+  /* = button: no drop shadow */
   .btn-eq {
     background: var(--accent);
     color: #111;
     font-size: 24px;
     font-weight: 500;
-    box-shadow: 0 6px 20px rgba(232,255,90,0.3);
   }
 
-  .btn-eq:active { box-shadow: 0 2px 8px rgba(232,255,90,0.2); }
-
-  .btn-zero { grid-column: span 2; width: calc(var(--btn-size) * 2 + var(--gap)); justify-content: flex-start; padding-left: calc(var(--btn-size) * 0.35); }
-
-  /* flip label inside btn when grid flipped */
-  #btn-grid.flip .btn { transform-origin: center; }
-  #btn-grid.flip .btn:active { transform: scale(0.93); }
-
-  /* ─── EDIT MODE ─── */
+  /* Edit mode */
   #btn-grid.edit-mode { cursor: move; }
   #btn-grid.edit-mode .btn { pointer-events: none; }
   #btn-grid.edit-mode::before {
@@ -424,13 +540,14 @@
     pointer-events: none;
   }
 
+  /* ─── EDIT OVERLAY ─── */
   #edit-overlay {
     position: absolute;
     top: 0; left: 0; right: 0;
     background: linear-gradient(180deg, var(--accent-dim) 0%, transparent 100%);
-    padding: 12px 16px;
+    padding: 10px 12px;
     display: none;
-    gap: 8px;
+    gap: 6px;
     z-index: 20;
     flex-wrap: wrap;
   }
@@ -438,8 +555,8 @@
   #edit-overlay.visible { display: flex; }
 
   .edit-btn {
-    height: 32px;
-    padding: 0 14px;
+    height: 30px;
+    padding: 0 12px;
     background: var(--surface);
     border: 1px solid var(--surface2);
     border-radius: 20px;
@@ -447,7 +564,7 @@
     font-family: var(--font-mono);
     font-size: 12px;
     cursor: pointer;
-    display: flex; align-items: center; gap: 6px;
+    display: flex; align-items: center; gap: 5px;
     transition: background 0.15s;
   }
 
@@ -493,67 +610,31 @@
     text-align: center;
   }
 
-  /* ─── HAND SWITCH ─── */
-  #hand-switch {
+  /* ─── INSTALL BUTTON ─── */
+  #install-btn {
     position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    z-index: 30;
-    transition: left 0.3s, right 0.3s;
+    z-index: 20;
+    display: none;
   }
 
-  #hand-switch-btn {
-    width: 28px;
-    height: 64px;
+  #install-btn.visible { display: flex; }
+
+  #install-btn button {
     background: var(--surface2);
-    border: none;
-    border-radius: 14px;
+    border: 1px solid var(--surface);
+    border-radius: 10px;
     color: var(--text-dim);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 3px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 6px 10px;
     cursor: pointer;
-    transition: background 0.15s;
-  }
-
-  #hand-switch-btn:active { background: var(--accent); color: #111; }
-
-  #hand-switch-btn span {
-    display: block;
-    width: 4px; height: 4px;
-    background: currentColor;
-    border-radius: 50%;
-  }
-
-  .hand-arrow {
-    font-size: 14px;
-    line-height: 1;
-  }
-
-  /* ─── SWIPE HINT ─── */
-  #swipe-hint {
-    position: absolute;
-    bottom: calc(env(safe-area-inset-bottom, 12px) + 4px);
-    left: 50%;
-    transform: translateX(-50%);
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 3px;
-    opacity: 0.3;
-    pointer-events: none;
-    transition: opacity 0.5s;
+    gap: 5px;
+    white-space: nowrap;
   }
 
-  #swipe-hint.hidden { opacity: 0; }
-
-  .hint-line {
-    width: 36px; height: 3px;
-    background: var(--text-dim);
-    border-radius: 2px;
-  }
+  #install-btn button:active { background: var(--surface); }
 
   /* ─── RIPPLE ─── */
   @keyframes ripple {
@@ -572,68 +653,114 @@
     margin-top: -10px;
   }
 
-  /* ─── ANIMATIONS ─── */
-  @keyframes slideUp {
-    from { transform: translateY(20px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
-  }
-
-  #btn-grid { animation: slideUp 0.4s ease both; }
-
-  /* ─── ERROR STATE ─── */
-  #result.error { color: #ff6b6b; }
+  /* ─── FLIP correction for side-panel when left-hand ─── */
+  /* icons stay readable when grid flips */
+  #btn-grid.flip .btn { transform-origin: center; }
+  #btn-grid.flip .btn:active { transform: scale(0.93); }
 </style>
 </head>
 <body>
 <div id="app" data-theme="dark">
 
-  <!-- 履歴パネル -->
+  <!-- ─── FULL HISTORY PANEL ─── -->
   <div id="history-panel">
     <div id="history-title">計算履歴</div>
     <button id="history-close">✕</button>
     <div id="history-list"></div>
   </div>
 
-  <!-- 設定パネル -->
+  <!-- ─── SETTINGS PANEL ─── -->
   <div id="settings-panel">
     <button id="settings-close">✕</button>
+
     <div class="settings-section">
       <div class="settings-label">外観</div>
       <div class="settings-row">
         <span class="settings-row-label">ダークモード</span>
-        <div class="toggle on" id="toggle-theme"></div>
+        <button class="toggle on" id="toggle-theme"></button>
       </div>
     </div>
+
     <div class="settings-section">
       <div class="settings-label">アクセントカラー</div>
       <div class="color-swatches">
-        <div class="swatch active" style="background:#e8ff5a" data-color="#e8ff5a"></div>
-        <div class="swatch" style="background:#7affc4" data-color="#7affc4"></div>
-        <div class="swatch" style="background:#ff8c69" data-color="#ff8c69"></div>
-        <div class="swatch" style="background:#a78bfa" data-color="#a78bfa"></div>
-        <div class="swatch" style="background:#38bdf8" data-color="#38bdf8"></div>
-        <div class="swatch" style="background:#fb7185" data-color="#fb7185"></div>
-        <div class="swatch" style="background:#f9a825" data-color="#f9a825"></div>
-        <div class="swatch" style="background:#e2e8f0" data-color="#e2e8f0"></div>
+        <!-- 6色のみ: 黄緑・緑・オレンジ・紫・水色・ピンク -->
+        <div class="swatch active" style="background:#e8ff5a" data-color="#e8ff5a" title="黄緑"></div>
+        <div class="swatch" style="background:#7affc4" data-color="#7affc4" title="緑"></div>
+        <div class="swatch" style="background:#ff8c69" data-color="#ff8c69" title="オレンジ"></div>
+        <div class="swatch" style="background:#a78bfa" data-color="#a78bfa" title="紫"></div>
+        <div class="swatch" style="background:#38bdf8" data-color="#38bdf8" title="水色"></div>
+        <div class="swatch" style="background:#fb7185" data-color="#fb7185" title="ピンク"></div>
       </div>
     </div>
+
     <div class="settings-section">
       <div class="settings-label">操作</div>
       <div class="settings-row">
         <span class="settings-row-label">触覚フィードバック</span>
-        <div class="toggle on" id="toggle-haptic"></div>
+        <button class="toggle on" id="toggle-haptic"></button>
       </div>
     </div>
+
+    <div class="settings-section">
+      <div class="settings-label">開発者・共有</div>
+      <!-- ★ 開発者リンク: 下の href="..." の部分を書き換えてください -->
+      <div class="settings-row">
+        <span class="settings-row-label">開発者</span>
+        <a href="https://YOUR_DEVELOPER_LINK_HERE" target="_blank" rel="noopener">リンク →</a>
+      </div>
+      <!-- ★ 共有ボタン: 下の shareUrl の値を書き換えてください -->
+      <button class="settings-share-btn" id="btn-share">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+        このアプリをシェア
+      </button>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-label">バージョン更新履歴</div>
+
+      <div class="changelog-item">
+        <div class="changelog-version">v1.1</div>
+        <div class="changelog-date">2025年 — 初期リリース後アップデート</div>
+        <div class="changelog-notes">
+          · イコールボタンのドロップシャドウを削除<br>
+          · 0キーを正方形に変更、イコールを5列目右端へ移動<br>
+          · 最下行を「0 / . / ⌫ / =」に統一<br>
+          · 右手・左手モード表示テキストを非表示化<br>
+          · 履歴・編集・設定ボタンを左右手切替ボタンと同列に集約<br>
+          · スワイプ履歴表示を廃止<br>
+          · 表示エリア下に直近履歴を常時表示<br>
+          · アクセントカラーを6色に絞り込み<br>
+          · 設定画面にバージョン更新履歴を追加<br>
+          · 設定画面に開発者リンク・シェアボタンを追加<br>
+          · PWA非インストール時にインストールボタンを表示
+        </div>
+      </div>
+
+      <div class="changelog-item">
+        <div class="changelog-version">v1.0</div>
+        <div class="changelog-date">2025年 — 初期リリース</div>
+        <div class="changelog-notes">
+          · 片手操作最適化電卓の初回リリース<br>
+          · 左右手モード切替<br>
+          · レイアウト編集モード（ドラッグ移動・サイズ調整）<br>
+          · ダーク／ライトテーマ切替<br>
+          · 計算履歴（直近10件）<br>
+          · 触覚フィードバック
+        </div>
+      </div>
+    </div>
+
     <div class="settings-section">
       <div class="settings-label">バージョン</div>
       <div class="settings-row">
         <span class="settings-row-label">片手電卓</span>
-        <span style="color:var(--text-dim);font-family:var(--font-mono);font-size:13px">v1.0</span>
+        <span style="color:var(--text-dim);font-family:var(--font-mono);font-size:13px">v1.1</span>
       </div>
     </div>
   </div>
 
-  <!-- 表示エリア -->
+  <!-- ─── DISPLAY AREA ─── -->
   <div id="display-area">
     <div id="expr"></div>
     <div id="result">0</div>
@@ -641,54 +768,66 @@
 
   <div id="divider"></div>
 
-  <!-- コントロールバー -->
-  <div id="control-bar">
-    <button class="ctrl-btn" id="btn-history" title="履歴">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-        <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.5"/>
-      </svg>
-    </button>
-    <div id="handedness-indicator">右手モード</div>
-    <button class="ctrl-btn" id="btn-edit" title="レイアウト編集">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-      </svg>
-    </button>
-    <button class="ctrl-btn" id="btn-settings" title="設定">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-        <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-      </svg>
-    </button>
+  <!-- ─── INLINE HISTORY STRIP ─── -->
+  <div id="history-strip">
+    <div id="history-strip-inner"></div>
   </div>
 
-  <!-- 編集オーバーレイ -->
+  <!-- ─── EDIT OVERLAY (top of calc-wrapper) ─── -->
   <div id="edit-overlay">
-    <button class="edit-btn" id="edit-size-toggle">⊞ サイズ調整</button>
-    <button class="edit-btn" id="edit-undo">↩ 元に戻す</button>
+    <button class="edit-btn" id="edit-size-toggle">⊞ サイズ</button>
+    <button class="edit-btn" id="edit-undo">↩ 戻す</button>
     <button class="edit-btn" id="edit-reset">⊘ リセット</button>
     <button class="edit-btn accent" id="edit-done">完了</button>
   </div>
 
-  <!-- サイズコントロール -->
-  <div id="size-controls">
-    <button class="size-ctrl" id="size-down">−</button>
-    <span id="size-label">70 px</span>
-    <button class="size-ctrl" id="size-up">＋</button>
-  </div>
-
-  <!-- 計算エリア -->
+  <!-- ─── CALC WRAPPER ─── -->
   <div id="calc-wrapper">
-    <!-- 手モード切替ボタン -->
-    <div id="hand-switch" style="left:4px">
-      <button id="hand-switch-btn" title="左右手切替">
-        <div class="hand-arrow">◀</div>
-        <span></span><span></span><span></span>
-        <div class="hand-arrow" style="transform:scaleX(-1)">◀</div>
+
+    <!-- SIZE CONTROLS -->
+    <div id="size-controls">
+      <button class="size-ctrl" id="size-down">−</button>
+      <span id="size-label">70 px</span>
+      <button class="size-ctrl" id="size-up">＋</button>
+    </div>
+
+    <!-- INSTALL BUTTON (PWA非インストール時のみ) -->
+    <div id="install-btn">
+      <button id="install-trigger">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        ホーム画面に追加
       </button>
     </div>
 
-    <!-- ボタングリッド -->
+    <!-- SIDE PANEL: hand switch + ctrl buttons -->
+    <div id="side-panel" style="left:4px">
+      <!-- ctrl buttons above -->
+      <button class="side-ctrl" id="btn-history" title="履歴">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.5"/>
+        </svg>
+      </button>
+      <button class="side-ctrl" id="btn-edit" title="レイアウト編集">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+        </svg>
+      </button>
+      <!-- hand switch -->
+      <button id="hand-switch-btn" title="左右手切替">
+        <div style="font-size:10px">◀▶</div>
+        <span></span><span></span><span></span>
+      </button>
+      <!-- settings below -->
+      <button class="side-ctrl" id="btn-settings" title="設定">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- BUTTON GRID -->
     <div id="btn-grid">
       <!-- Row 1: AC, ±, %, ÷ -->
       <button class="btn btn-fn" data-val="AC">AC</button>
@@ -700,7 +839,7 @@
       <button class="btn btn-num" data-val="8">8</button>
       <button class="btn btn-num" data-val="9">9</button>
       <button class="btn btn-op" data-val="×">×</button>
-      <!-- Row 3: 4, 5, 6, - -->
+      <!-- Row 3: 4, 5, 6, − -->
       <button class="btn btn-num" data-val="4">4</button>
       <button class="btn btn-num" data-val="5">5</button>
       <button class="btn btn-num" data-val="6">6</button>
@@ -710,75 +849,69 @@
       <button class="btn btn-num" data-val="2">2</button>
       <button class="btn btn-num" data-val="3">3</button>
       <button class="btn btn-op" data-val="+">+</button>
-      <!-- Row 5: 0(wide), ., DEL, = -->
-      <button class="btn btn-num btn-zero" data-val="0">0</button>
-      <button class="btn btn-fn" data-val=".">.</button>
-      <button class="btn btn-fn" data-val="DEL">⌫</button>
-      <button class="btn btn-eq" data-val="=">=</button>
+      <!-- Row 5: 0, ., DEL, = -->
+      <button class="btn btn-num" data-val="0">0</button>
+      <button class="btn btn-fn"  data-val=".">.</button>
+      <button class="btn btn-fn"  data-val="DEL">⌫</button>
+      <button class="btn btn-eq"  data-val="=">=</button>
     </div>
 
-    <!-- スワイプヒント -->
-    <div id="swipe-hint">
-      <div class="hint-line"></div>
-    </div>
-  </div>
+  </div><!-- /calc-wrapper -->
 
-</div>
+</div><!-- /app -->
 
 <script>
 (() => {
   // ─── STATE ───
   const S = {
-    expr: '',
-    result: '0',
-    hasResult: false,
+    expr: '', result: '0', hasResult: false,
     history: [],
     isRight: true,
     editMode: false,
     haptic: true,
     theme: 'dark',
     accent: '#e8ff5a',
-    btnSize: 70,
-    gap: 10,
+    btnSize: 70, gap: 10,
     gridPos: { right: { x: null, y: null }, left: { x: null, y: null } },
     undoStack: [],
     showSizeCtrl: false,
   };
 
   // ─── ELEMENTS ───
-  const $expr = document.getElementById('expr');
-  const $result = document.getElementById('result');
-  const $grid = document.getElementById('btn-grid');
-  const $wrapper = document.getElementById('calc-wrapper');
-  const $editOverlay = document.getElementById('edit-overlay');
-  const $sizeControls = document.getElementById('size-controls');
-  const $sizeLabel = document.getElementById('size-label');
-  const $handSwitch = document.getElementById('hand-switch');
-  const $handSwitchBtn = document.getElementById('hand-switch-btn');
-  const $handIndicator = document.getElementById('handedness-indicator');
-  const $historyPanel = document.getElementById('history-panel');
-  const $historyList = document.getElementById('history-list');
+  const $expr          = document.getElementById('expr');
+  const $result        = document.getElementById('result');
+  const $grid          = document.getElementById('btn-grid');
+  const $wrapper       = document.getElementById('calc-wrapper');
+  const $editOverlay   = document.getElementById('edit-overlay');
+  const $sizeControls  = document.getElementById('size-controls');
+  const $sizeLabel     = document.getElementById('size-label');
+  const $sidePanel     = document.getElementById('side-panel');
+  const $historyPanel  = document.getElementById('history-panel');
+  const $historyList   = document.getElementById('history-list');
   const $settingsPanel = document.getElementById('settings-panel');
-  const $app = document.getElementById('app');
+  const $historyStrip  = document.getElementById('history-strip');
+  const $stripInner    = document.getElementById('history-strip-inner');
+  const $installBtn    = document.getElementById('install-btn');
+  const $app           = document.getElementById('app');
 
-  // ─── LOAD PREFS ───
+  // ─── PERSIST ───
   function loadPrefs() {
     try {
-      const saved = JSON.parse(localStorage.getItem('calc_prefs') || '{}');
-      if (saved.theme) S.theme = saved.theme;
-      if (saved.accent) S.accent = saved.accent;
-      if (saved.haptic !== undefined) S.haptic = saved.haptic;
-      if (saved.isRight !== undefined) S.isRight = saved.isRight;
-      if (saved.btnSize) S.btnSize = saved.btnSize;
-      if (saved.gap) S.gap = saved.gap;
-      if (saved.gridPos) S.gridPos = saved.gridPos;
-      if (saved.history) S.history = saved.history;
+      const saved = JSON.parse(localStorage.getItem('calc_prefs2') || '{}');
+      if (saved.theme)            S.theme   = saved.theme;
+      if (saved.accent)           S.accent  = saved.accent;
+      if (saved.haptic != null)   S.haptic  = saved.haptic;
+      if (saved.isRight != null)  S.isRight = saved.isRight;
+      if (saved.btnSize)          S.btnSize = saved.btnSize;
+      if (saved.gap)              S.gap     = saved.gap;
+      if (saved.gridPos)          S.gridPos = saved.gridPos;
+      if (saved.history)          S.history = saved.history;
     } catch(e) {}
   }
 
   function savePrefs() {
     try {
-      localStorage.setItem('calc_prefs', JSON.stringify({
+      localStorage.setItem('calc_prefs2', JSON.stringify({
         theme: S.theme, accent: S.accent, haptic: S.haptic,
         isRight: S.isRight, btnSize: S.btnSize, gap: S.gap,
         gridPos: S.gridPos, history: S.history
@@ -786,7 +919,7 @@
     } catch(e) {}
   }
 
-  // ─── APPLY THEME/ACCENT ───
+  // ─── THEME ───
   function applyTheme() {
     $app.dataset.theme = S.theme;
     document.getElementById('toggle-theme').classList.toggle('on', S.theme === 'dark');
@@ -794,18 +927,14 @@
 
   function applyAccent() {
     document.documentElement.style.setProperty('--accent', S.accent);
-    // accent-dim
-    const hex = S.accent.replace('#','');
+    const hex = S.accent.replace('#', '');
     const r = parseInt(hex.substr(0,2),16);
     const g = parseInt(hex.substr(2,2),16);
     const b = parseInt(hex.substr(4,2),16);
     document.documentElement.style.setProperty('--accent-dim', `rgba(${r},${g},${b},0.15)`);
-    // eq btn shadow
-    document.documentElement.style.setProperty('--eq-shadow', `rgba(${r},${g},${b},0.3)`);
-    // mark active swatch
-    document.querySelectorAll('.swatch').forEach(s => {
-      s.classList.toggle('active', s.dataset.color === S.accent);
-    });
+    document.querySelectorAll('.swatch').forEach(s =>
+      s.classList.toggle('active', s.dataset.color === S.accent)
+    );
   }
 
   // ─── GRID SIZE ───
@@ -813,11 +942,6 @@
     document.documentElement.style.setProperty('--btn-size', S.btnSize + 'px');
     document.documentElement.style.setProperty('--gap', S.gap + 'px');
     $sizeLabel.textContent = S.btnSize + ' px';
-    // Update zero button width
-    const zeroBtn = $grid.querySelector('.btn-zero');
-    if (zeroBtn) {
-      zeroBtn.style.width = (S.btnSize * 2 + S.gap) + 'px';
-    }
   }
 
   // ─── GRID POSITION ───
@@ -825,11 +949,9 @@
     const wr = $wrapper.getBoundingClientRect();
     const gridW = S.btnSize * 4 + S.gap * 3;
     const gridH = S.btnSize * 5 + S.gap * 4;
-    const margin = 16;
-    const x = S.isRight
-      ? wr.width - gridW - margin
-      : margin;
-    const y = wr.height - gridH - 20;
+    const margin = 44; // side-panel width
+    const x = S.isRight ? wr.width - gridW - margin : margin;
+    const y = Math.max(0, wr.height - gridH - 16);
     return { x, y };
   }
 
@@ -837,105 +959,104 @@
 
   function applyGridPos() {
     const pos = S.gridPos[posKey()];
-    let x, y;
-    if (pos.x === null) {
-      const d = getDefaultPos();
-      x = d.x; y = d.y;
-    } else {
-      x = pos.x; y = pos.y;
-    }
+    let { x, y } = (pos.x === null) ? getDefaultPos() : pos;
     $grid.style.left = x + 'px';
-    $grid.style.bottom = 'auto';
-    $grid.style.top = y + 'px';
+    $grid.style.top  = y + 'px';
   }
 
   // ─── HANDEDNESS ───
   function setHand(isRight) {
     S.isRight = isRight;
-    $handIndicator.textContent = isRight ? '右手モード' : '左手モード';
-
-    // flip grid
     $grid.classList.toggle('flip', !isRight);
 
-    // move switch button
     if (isRight) {
-      $handSwitch.style.left = '4px';
-      $handSwitch.style.right = 'auto';
+      $sidePanel.style.left  = '4px';
+      $sidePanel.style.right = 'auto';
     } else {
-      $handSwitch.style.right = '4px';
-      $handSwitch.style.left = 'auto';
+      $sidePanel.style.right = '4px';
+      $sidePanel.style.left  = 'auto';
     }
 
+    positionInstallBtn();
     applyGridPos();
     savePrefs();
   }
 
   // ─── HAPTIC ───
   function vibrate(ms = 10) {
-    if (!S.haptic) return;
-    if (navigator.vibrate) navigator.vibrate(ms);
+    if (!S.haptic || !navigator.vibrate) return;
+    navigator.vibrate(ms);
   }
 
-  // ─── CALC LOGIC ───
+  // ─── CALC ───
   function formatNum(n) {
     if (!isFinite(n)) return 'エラー';
-    // Remove trailing zeros after decimal
-    let s = parseFloat(n.toPrecision(12)).toString();
-    return s;
+    return parseFloat(n.toPrecision(12)).toString();
   }
 
   function evaluate() {
     try {
-      // Replace symbols
-      let expr = S.expr
+      let e = S.expr
         .replace(/×/g, '*')
         .replace(/÷/g, '/')
         .replace(/−/g, '-');
-
-      // Handle % — treat as /100
-      expr = expr.replace(/(\d+\.?\d*)%/g, '($1/100)');
-
-      // Validate
-      if (!expr || /[+\-*/.]$/.test(expr)) return null;
-
-      const result = Function('"use strict"; return (' + expr + ')')();
-      return formatNum(result);
-    } catch(e) {
-      return null;
-    }
+      e = e.replace(/(\d+\.?\d*)%/g, '($1/100)');
+      if (!e || /[+\-*/.%]$/.test(e)) return null;
+      const r = Function('"use strict"; return (' + e + ')')();
+      return formatNum(r);
+    } catch(e) { return null; }
   }
 
   function updateDisplay() {
-    $expr.textContent = S.expr || '';
+    $expr.textContent   = S.expr || '';
     $result.textContent = S.result;
     $result.classList.remove('error');
+    updateStrip();
   }
 
+  // ─── INLINE HISTORY STRIP ───
+  function updateStrip() {
+    $stripInner.innerHTML = '';
+    if (S.history.length === 0) {
+      $historyStrip.classList.remove('has-items');
+      return;
+    }
+    $historyStrip.classList.add('has-items');
+    // Show up to 3 most recent
+    const items = S.history.slice(0, 3);
+    items.forEach(h => {
+      const div = document.createElement('div');
+      div.className = 'strip-item';
+      div.innerHTML = `<span class="strip-expr">${h.expr}</span><span class="strip-result">= ${h.result}</span>`;
+      div.addEventListener('pointerdown', () => {
+        S.expr = h.result;
+        S.result = h.result;
+        S.hasResult = true;
+        updateDisplay();
+        vibrate(8);
+      });
+      $stripInner.appendChild(div);
+    });
+  }
+
+  // ─── HANDLE BUTTON ───
   function handleBtn(val) {
     vibrate(8);
-
     const ops = ['÷', '×', '−', '+'];
     const isOp = ops.includes(val);
 
     switch(val) {
       case 'AC':
-        S.expr = '';
-        S.result = '0';
-        S.hasResult = false;
+        S.expr = ''; S.result = '0'; S.hasResult = false;
         break;
 
       case 'DEL':
         if (S.hasResult) {
-          S.expr = '';
-          S.result = '0';
-          S.hasResult = false;
+          S.expr = ''; S.result = '0'; S.hasResult = false;
         } else {
           S.expr = S.expr.slice(0, -1);
           if (!S.expr) S.result = '0';
-          else {
-            const r = evaluate();
-            if (r !== null) S.result = r;
-          }
+          else { const r = evaluate(); if (r !== null) S.result = r; }
         }
         break;
 
@@ -946,27 +1067,19 @@
           S.expr = S.result;
           S.hasResult = false;
         } else if (S.expr) {
-          // toggle leading minus on last number
-          const match = S.expr.match(/^(-?)(\d.*)$/);
-          if (match) {
-            S.expr = match[1] ? match[2] : '-' + match[2];
-          } else {
-            S.expr = S.expr.startsWith('-') ? S.expr.slice(1) : '-' + S.expr;
-          }
-          const r = evaluate();
-          if (r !== null) S.result = r;
+          S.expr = S.expr.startsWith('-') ? S.expr.slice(1) : '-' + S.expr;
+          const r = evaluate(); if (r !== null) S.result = r;
         }
         break;
 
       case '%':
         if (S.expr) {
           S.expr += '%';
-          const r = evaluate();
-          if (r !== null) S.result = r;
+          const r = evaluate(); if (r !== null) S.result = r;
         }
         break;
 
-      case '=':
+      case '=': {
         if (!S.expr) break;
         const res = evaluate();
         if (res === null) {
@@ -974,13 +1087,11 @@
           $result.classList.add('error');
           vibrate(30);
         } else {
-          // save to history
           S.history.unshift({ expr: S.expr, result: res });
           if (S.history.length > 10) S.history.pop();
           S.result = res;
           S.expr = res;
           S.hasResult = true;
-          // pop animation
           $result.classList.remove('pop');
           void $result.offsetWidth;
           $result.classList.add('pop');
@@ -988,22 +1099,22 @@
         }
         savePrefs();
         break;
+      }
 
-      case '.':
+      case '.': {
         if (S.hasResult) { S.expr = '0.'; S.result = '0.'; S.hasResult = false; break; }
-        // Don't add second dot to current number
-        const lastNum = S.expr.split(/[+\-×÷]/).pop();
+        const lastNum = S.expr.split(/[+\-×÷−]/).pop();
         if (!lastNum.includes('.')) {
           if (!S.expr || ops.some(o => S.expr.endsWith(o))) S.expr += '0';
           S.expr += '.';
           S.result = S.expr;
         }
         break;
+      }
 
       default:
         if (isOp) {
           S.hasResult = false;
-          // Replace last op if ends with op
           if (S.expr && ops.some(o => S.expr.endsWith(o))) {
             S.expr = S.expr.slice(0, -1) + val;
           } else if (S.expr) {
@@ -1011,12 +1122,10 @@
           } else {
             if (val === '−') S.expr = '−';
           }
-          const r = evaluate();
-          if (r !== null) S.result = r;
+          const r = evaluate(); if (r !== null) S.result = r;
         } else {
           // digit
           if (S.hasResult) { S.expr = ''; S.hasResult = false; }
-          // Prevent leading zeros
           if (val !== '0' || S.expr !== '0') {
             if (S.expr === '0') S.expr = val;
             else S.expr += val;
@@ -1032,15 +1141,15 @@
 
   // ─── RIPPLE ───
   function addRipple(btn, e) {
-    const r = document.createElement('div');
-    r.className = 'ripple-effect';
+    const el = document.createElement('div');
+    el.className = 'ripple-effect';
     const rect = btn.getBoundingClientRect();
-    const x = (e.clientX || e.touches?.[0]?.clientX || rect.left + rect.width/2) - rect.left;
-    const y = (e.clientY || e.touches?.[0]?.clientY || rect.top + rect.height/2) - rect.top;
-    r.style.left = x + 'px';
-    r.style.top = y + 'px';
-    btn.appendChild(r);
-    r.addEventListener('animationend', () => r.remove());
+    const x = (e.clientX || rect.left + rect.width/2) - rect.left;
+    const y = (e.clientY || rect.top + rect.height/2) - rect.top;
+    el.style.left = x + 'px';
+    el.style.top  = y + 'px';
+    btn.appendChild(el);
+    el.addEventListener('animationend', () => el.remove());
   }
 
   // ─── BUTTON EVENTS ───
@@ -1060,15 +1169,13 @@
     e.preventDefault();
     $grid.setPointerCapture(e.pointerId);
     const rect = $grid.getBoundingClientRect();
+    const wr   = $wrapper.getBoundingClientRect();
     dragState = {
       startX: e.clientX - rect.left,
       startY: e.clientY - rect.top,
-      origX: parseInt($grid.style.left) || 0,
-      origY: parseInt($grid.style.top) || 0,
     };
     $grid.classList.add('dragging');
-    // save to undo
-    S.undoStack.push({ x: dragState.origX, y: dragState.origY });
+    S.undoStack.push({ x: parseInt($grid.style.left)||0, y: parseInt($grid.style.top)||0 });
     if (S.undoStack.length > 20) S.undoStack.shift();
   });
 
@@ -1077,29 +1184,19 @@
     e.preventDefault();
     const wr = $wrapper.getBoundingClientRect();
     const gridRect = $grid.getBoundingClientRect();
-    const gridW = gridRect.width;
-    const gridH = gridRect.height;
-
     let newX = e.clientX - wr.left - dragState.startX;
-    let newY = e.clientY - wr.top - dragState.startY;
-
-    // Clamp
-    newX = Math.max(-20, Math.min(wr.width - gridW + 20, newX));
-    newY = Math.max(0, Math.min(wr.height - gridH, newY));
-
+    let newY = e.clientY - wr.top  - dragState.startY;
+    newX = Math.max(-20, Math.min(wr.width  - gridRect.width  + 20, newX));
+    newY = Math.max(0,   Math.min(wr.height - gridRect.height,      newY));
     $grid.style.left = newX + 'px';
-    $grid.style.top = newY + 'px';
+    $grid.style.top  = newY + 'px';
   });
 
   $grid.addEventListener('pointerup', e => {
     if (!dragState) return;
     $grid.releasePointerCapture(e.pointerId);
     $grid.classList.remove('dragging');
-
-    S.gridPos[posKey()] = {
-      x: parseInt($grid.style.left) || 0,
-      y: parseInt($grid.style.top) || 0
-    };
+    S.gridPos[posKey()] = { x: parseInt($grid.style.left)||0, y: parseInt($grid.style.top)||0 };
     dragState = null;
     savePrefs();
   });
@@ -1121,11 +1218,11 @@
   });
 
   document.getElementById('edit-undo').addEventListener('click', () => {
-    if (S.undoStack.length === 0) return;
+    if (!S.undoStack.length) return;
     const prev = S.undoStack.pop();
     $grid.style.left = prev.x + 'px';
-    $grid.style.top = prev.y + 'px';
-    S.gridPos[posKey()] = { x: prev.x, y: prev.y };
+    $grid.style.top  = prev.y + 'px';
+    S.gridPos[posKey()] = prev;
   });
 
   document.getElementById('edit-reset').addEventListener('click', () => {
@@ -1142,28 +1239,24 @@
   document.getElementById('size-up').addEventListener('click', () => {
     S.btnSize = Math.min(90, S.btnSize + 5);
     S.gap = Math.min(14, Math.round(S.btnSize * 0.14));
-    applyGridSize();
-    applyGridPos();
-    savePrefs();
+    applyGridSize(); applyGridPos(); savePrefs();
   });
 
   document.getElementById('size-down').addEventListener('click', () => {
     S.btnSize = Math.max(52, S.btnSize - 5);
     S.gap = Math.max(6, Math.round(S.btnSize * 0.12));
-    applyGridSize();
-    applyGridPos();
-    savePrefs();
+    applyGridSize(); applyGridPos(); savePrefs();
   });
 
   // ─── HAND SWITCH ───
-  $handSwitchBtn.addEventListener('click', () => {
+  document.getElementById('hand-switch-btn').addEventListener('click', () => {
     vibrate(10);
     setHand(!S.isRight);
   });
 
-  // ─── HISTORY ───
+  // ─── HISTORY PANEL ───
   document.getElementById('btn-history').addEventListener('click', () => {
-    renderHistory();
+    renderHistoryPanel();
     $historyPanel.classList.add('open');
   });
 
@@ -1171,7 +1264,7 @@
     $historyPanel.classList.remove('open');
   });
 
-  function renderHistory() {
+  function renderHistoryPanel() {
     $historyList.innerHTML = '';
     if (S.history.length === 0) {
       $historyList.innerHTML = '<div style="color:var(--text-dim);font-family:var(--font-mono);font-size:14px;padding:20px;text-align:center">履歴がありません</div>';
@@ -1182,41 +1275,13 @@
       item.className = 'history-item';
       item.innerHTML = `<div class="history-expr">${h.expr}</div><div class="history-result">= ${h.result}</div>`;
       item.addEventListener('click', () => {
-        S.expr = h.result;
-        S.result = h.result;
-        S.hasResult = true;
+        S.expr = h.result; S.result = h.result; S.hasResult = true;
         updateDisplay();
         $historyPanel.classList.remove('open');
       });
       $historyList.appendChild(item);
     });
   }
-
-  // Swipe up to open history
-  let swipeStartY = null;
-  $wrapper.addEventListener('touchstart', e => {
-    if (S.editMode) return;
-    swipeStartY = e.touches[0].clientY;
-  }, { passive: true });
-
-  $wrapper.addEventListener('touchend', e => {
-    if (swipeStartY === null || S.editMode) return;
-    const dy = swipeStartY - e.changedTouches[0].clientY;
-    if (dy > 60) {
-      renderHistory();
-      $historyPanel.classList.add('open');
-    }
-    swipeStartY = null;
-  }, { passive: true });
-
-  // Hide swipe hint after first interaction
-  let hintHidden = false;
-  document.addEventListener('pointerdown', () => {
-    if (!hintHidden) {
-      hintHidden = true;
-      document.getElementById('swipe-hint').classList.add('hidden');
-    }
-  }, { once: true });
 
   // ─── SETTINGS ───
   document.getElementById('btn-settings').addEventListener('click', () => {
@@ -1229,8 +1294,7 @@
 
   document.getElementById('toggle-theme').addEventListener('click', function() {
     S.theme = S.theme === 'dark' ? 'light' : 'dark';
-    applyTheme();
-    savePrefs();
+    applyTheme(); savePrefs();
   });
 
   document.getElementById('toggle-haptic').addEventListener('click', function() {
@@ -1242,9 +1306,66 @@
   document.querySelectorAll('.swatch').forEach(s => {
     s.addEventListener('click', () => {
       S.accent = s.dataset.color;
-      applyAccent();
-      savePrefs();
+      applyAccent(); savePrefs();
     });
+  });
+
+  // ─── SHARE ───
+  document.getElementById('btn-share').addEventListener('click', () => {
+    // ★ このURLをアプリのURLに書き換えてください
+    const shareUrl = 'https://YOUR_APP_URL_HERE';
+    if (navigator.share) {
+      navigator.share({ title: '片手電卓', url: shareUrl }).catch(() => {});
+    } else {
+      navigator.clipboard?.writeText(shareUrl).then(() => {
+        alert('URLをコピーしました');
+      }).catch(() => {
+        prompt('このURLをシェアしてください:', shareUrl);
+      });
+    }
+  });
+
+  // ─── PWA INSTALL ───
+  let deferredInstallPrompt = null;
+
+  function isPwa() {
+    return window.matchMedia('(display-mode: standalone)').matches
+        || window.navigator.standalone === true;
+  }
+
+  function positionInstallBtn() {
+    // Place install btn on the opposite side of the side-panel (i.e. same side as calc)
+    if (S.isRight) {
+      $installBtn.style.left  = '8px';
+      $installBtn.style.right = 'auto';
+    } else {
+      $installBtn.style.right = '8px';
+      $installBtn.style.left  = 'auto';
+    }
+    $installBtn.style.bottom = '16px';
+  }
+
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    if (!isPwa()) {
+      $installBtn.classList.add('visible');
+      positionInstallBtn();
+    }
+  });
+
+  document.getElementById('install-trigger').addEventListener('click', async () => {
+    if (!deferredInstallPrompt) return;
+    deferredInstallPrompt.prompt();
+    const { outcome } = await deferredInstallPrompt.userChoice;
+    if (outcome === 'accepted') {
+      $installBtn.classList.remove('visible');
+    }
+    deferredInstallPrompt = null;
+  });
+
+  window.addEventListener('appinstalled', () => {
+    $installBtn.classList.remove('visible');
   });
 
   // ─── KEYBOARD ───
@@ -1266,6 +1387,7 @@
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(() => {
       if (S.gridPos[posKey()].x === null) applyGridPos();
+      positionInstallBtn();
     }, 100);
   });
 
@@ -1277,13 +1399,10 @@
     applyGridSize();
     document.getElementById('toggle-haptic').classList.toggle('on', S.haptic);
 
-    // Wait for layout then position grid
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        setHand(S.isRight);
-        updateDisplay();
-      });
-    });
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      setHand(S.isRight);
+      updateDisplay();
+    }));
   }
 
   init();

@@ -8,54 +8,56 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>片手電卓</title>
-
-<!-- PWA manifest (inline) -->
 <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22%E7%89%87%E6%89%8B%E9%9B%BB%E5%8D%93%22%2C%22short_name%22%3A%22%E9%9B%BB%E5%8D%93%22%2C%22display%22%3A%22standalone%22%2C%22start_url%22%3A%22.%2F%22%2C%22background_color%22%3A%22%230f0f0f%22%2C%22theme_color%22%3A%22%230f0f0f%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fpng%3Bbase64%2CiVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAACXBIWXMAAAsTAAALEwEAmpwYAAABJklEQVR4nO3BMQEAAADCoPVP7WsIoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAeAMBuAABHgAAAABJRU5ErkJggg%3D%3D%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fpng%22%7D%5D%7D">
-
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Noto+Sans+JP:wght@300;400&display=swap');
 
+/* ─── TOKENS ─── */
 :root {
-  --bg: #0f0f0f;
-  --surface: #1a1a1a;
-  --surface2: #242424;
-  --text: #f0f0f0;
-  --text-dim: #555;
-  --accent: #5bb88a;
-  --accent-dim: rgba(91,184,138,0.15);
-  --btn-num: #1e1e1e;
-  --btn-op: #2a2a2a;
-  --btn-fn: #222;
-  --shadow: rgba(0,0,0,0.5);
-  --radius: 14px;
-  --gap: 10px;
+  --bg:       #0f0f0f;
+  --surface:  #1a1a1a;
+  --surface2: #252525;
+  --text:     #f0f0f0;
+  --text-dim: #505050;
+  --accent:   #5bb88a;
+  --accent-dim: rgba(91,184,138,0.13);
+  --btn-num:  #1e1e1e;
+  --btn-op:   #282828;
+  --btn-fn:   #202020;
+  --shadow:   rgba(0,0,0,0.55);
+  --radius:   16px;
+  --gap:      10px;
   --btn-size: 70px;
   --font-mono: 'DM Mono', monospace;
-  --font-jp: 'Noto Sans JP', sans-serif;
+  --font-jp:   'Noto Sans JP', sans-serif;
+  /* side-ctrl size: 2× of 28px */
+  --ctrl-size: 56px;
 }
 
 [data-theme="light"] {
-  --bg: #f0f0ee;
-  --surface: #ffffff;
+  --bg:       #f0f0ee;
+  --surface:  #ffffff;
   --surface2: #e2e2df;
-  --text: #111111;
-  --text-dim: #999;
-  --btn-num: #ffffff;
-  --btn-op: #e8e8e8;
-  --btn-fn: #ececec;
-  --shadow: rgba(0,0,0,0.10);
+  --text:     #111111;
+  --text-dim: #aaaaaa;
+  --btn-num:  #ffffff;
+  --btn-op:   #e6e6e6;
+  --btn-fn:   #ececec;
+  --shadow:   rgba(0,0,0,0.10);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
 html, body {
   height: 100%; overflow: hidden;
-  background: var(--bg);
-  color: var(--text);
+  background: var(--bg); color: var(--text);
   font-family: var(--font-jp);
   touch-action: none;
 }
 
+/* ═══════════════════════════════════════
+   APP SHELL
+═══════════════════════════════════════ */
 #app {
   height: 100dvh;
   display: flex;
@@ -65,143 +67,164 @@ html, body {
   background: var(--bg);
 }
 
-/* ─── DISPLAY AREA ─── */
-#display-area {
-  flex: 0 0 auto;
-  padding: 14px 20px 6px;
-  background: var(--bg);
-  z-index: 10;
-}
-
-#expr {
-  font-family: var(--font-mono);
-  font-size: 15px;
-  color: var(--text-dim);
-  min-height: 20px;
-  text-align: right;
+/* ═══════════════════════════════════════
+   HISTORY + DISPLAY AREA
+   (flex-grows to fill space above calc)
+   Pixel-style: history scrolls at top,
+   current expression large at bottom.
+═══════════════════════════════════════ */
+#display-zone {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;   /* content anchored to bottom */
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  letter-spacing: 0.02em;
+  padding: 8px 18px 4px 18px;
+  position: relative;
 }
 
-#result {
-  font-family: var(--font-mono);
-  font-size: clamp(36px, 10vw, 52px);
-  font-weight: 300;
-  color: var(--text);
-  text-align: right;
-  line-height: 1.1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  letter-spacing: -0.02em;
-}
-
-#result.error { color: #e05555; }
-
-#divider {
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--surface2), transparent);
-  margin: 4px 0;
-  flex-shrink: 0;
-}
-
-/* ─── HISTORY STRIP (inline, between display and calc) ─── */
-#history-strip {
+/* ── Past history rows (above current) ── */
+#history-rows {
   flex: 1 1 0;
   min-height: 0;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end; /* items stack upward from bottom */
+  justify-content: flex-end;   /* oldest rows scroll off top */
 }
 
-#history-strip-inner {
+#history-rows-inner {
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
-  overflow: hidden;
-  padding: 4px 14px 6px;
   gap: 0;
-  height: 100%;
+  overflow: hidden;
 }
 
-/* Each item: 2-line layout */
-.strip-item {
+/* Each past calculation: expr small/dim on top, result larger below */
+.hrow {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  padding: 3px 6px 3px;
-  border-radius: 8px;
+  padding: 2px 4px;
+  border-radius: 6px;
   cursor: pointer;
-  transition: background 0.12s;
   flex-shrink: 0;
+  transition: background 0.12s;
 }
+.hrow:active { background: var(--surface); }
 
-.strip-item:active { background: var(--surface); }
-
-/* Completed history items: small expr on top, larger result below */
-.strip-item .si-expr {
+.hrow-expr {
   font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--text-dim);
-  text-align: right;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
-  line-height: 1.3;
-}
-
-.strip-item .si-result {
-  font-family: var(--font-mono);
-  font-size: 18px;
-  font-weight: 400;
-  color: var(--text);
-  text-align: right;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
-  line-height: 1.25;
-}
-
-/* Current (live) entry: big expr on top, small dim result below */
-.strip-item.current .si-expr {
-  font-size: 18px;
-  color: var(--text);
-}
-
-.strip-item.current .si-result {
   font-size: 13px;
   color: var(--text-dim);
-  font-weight: 300;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  line-height: 1.4;
 }
 
-.strip-item.current { cursor: default; }
-.strip-item.current:active { background: transparent; }
+.hrow-result {
+  font-family: var(--font-mono);
+  font-size: 22px;
+  font-weight: 300;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  line-height: 1.2;
+}
 
-/* ─── HISTORY FULL PANEL ─── */
+/* ── Current / Live display ── */
+#live-display {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  padding: 2px 4px 6px;
+}
+
+/*
+  Pixel-calculator logic:
+  STATE A: Entering expression
+    - #live-expr  → LARGE (this is what user is typing)
+    - #live-result → small/dim (live preview)
+
+  STATE B: After = pressed
+    - #live-expr  → small/dim (the completed formula)
+    - #live-result → LARGE (the answer)
+*/
+#live-expr {
+  font-family: var(--font-mono);
+  font-weight: 300;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  text-align: right;
+  line-height: 1.2;
+  transition: font-size 0.15s ease, color 0.15s ease;
+}
+
+#live-result {
+  font-family: var(--font-mono);
+  font-weight: 300;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  text-align: right;
+  line-height: 1.15;
+  transition: font-size 0.15s ease, color 0.15s ease;
+}
+
+/* State A: entering */
+#app.state-entering #live-expr {
+  font-size: clamp(32px, 9vw, 52px);
+  color: var(--text);
+}
+#app.state-entering #live-result {
+  font-size: 20px;
+  color: var(--text-dim);
+}
+
+/* State B: result */
+#app.state-result #live-expr {
+  font-size: 20px;
+  color: var(--text-dim);
+}
+#app.state-result #live-result {
+  font-size: clamp(38px, 11vw, 60px);
+  color: var(--text);
+}
+
+/* hide empty live-result */
+#live-result:empty { display: none; }
+#live-expr:empty   { display: none; }
+
+/* ═══════════════════════════════════════
+   HISTORY FULL PANEL
+═══════════════════════════════════════ */
 #history-panel {
   position: absolute;
   inset: 0;
   background: var(--bg);
   z-index: 50;
   transform: translateY(100%);
-  transition: transform 0.35s cubic-bezier(0.32,0.72,0,1);
-  padding: 60px 20px 20px;
+  transition: transform 0.32s cubic-bezier(0.32,0.72,0,1);
+  padding: 64px 20px 20px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
-
 #history-panel.open { transform: translateY(0); }
 
 #history-title {
   font-family: var(--font-mono);
   font-size: 11px;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.14em;
   color: var(--text-dim);
   text-transform: uppercase;
   margin-bottom: 8px;
@@ -212,108 +235,75 @@ html, body {
   top: 16px; right: 20px;
   width: 36px; height: 36px;
   background: var(--surface2);
-  border: none;
-  border-radius: 50%;
-  color: var(--text);
-  font-size: 18px;
+  border: none; border-radius: 50%;
+  color: var(--text); font-size: 18px;
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
 }
 
 #history-list {
-  flex: 1;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  flex: 1; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 8px;
 }
 
-/* Full panel history items: same 2-line layout */
 .history-item {
   background: var(--surface);
   border-radius: 12px;
   padding: 10px 14px;
   cursor: pointer;
-  transition: background 0.15s;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
+  display: flex; flex-direction: column; align-items: flex-end;
+  transition: background 0.14s;
 }
-
 .history-item:active { background: var(--surface2); }
 
 .hi-expr {
   font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--text-dim);
-  text-align: right;
+  font-size: 12px; color: var(--text-dim); text-align: right;
 }
-
 .hi-result {
   font-family: var(--font-mono);
-  font-size: 22px;
-  font-weight: 400;
-  color: var(--text);
-  text-align: right;
-  margin-top: 1px;
+  font-size: 24px; font-weight: 300; color: var(--text);
+  text-align: right; margin-top: 2px;
 }
 
-/* ─── SETTINGS PANEL ─── */
+/* ═══════════════════════════════════════
+   SETTINGS PANEL
+═══════════════════════════════════════ */
 #settings-panel {
-  position: absolute;
-  inset: 0;
-  background: var(--bg);
-  z-index: 50;
+  position: absolute; inset: 0;
+  background: var(--bg); z-index: 50;
   transform: translateX(100%);
-  transition: transform 0.3s cubic-bezier(0.32,0.72,0,1);
+  transition: transform 0.28s cubic-bezier(0.32,0.72,0,1);
   overflow-y: auto;
 }
-
 #settings-panel.open { transform: translateX(0); }
 
-/* Settings inner scroll content */
-.settings-content {
-  padding: 60px 20px 40px;
-}
+.settings-content { padding: 60px 20px 40px; }
 
 #settings-close {
-  position: fixed;
-  top: 16px; right: 20px;
+  position: fixed; top: 16px; right: 20px;
   width: 36px; height: 36px;
-  background: var(--surface2);
-  border: none;
-  border-radius: 50%;
-  color: var(--text);
-  font-size: 18px;
-  cursor: pointer;
+  background: var(--surface2); border: none; border-radius: 50%;
+  color: var(--text); font-size: 18px; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   z-index: 51;
 }
 
 /* Changelog sub-panel */
 #changelog-panel {
-  position: absolute;
-  inset: 0;
-  background: var(--bg);
-  z-index: 52;
+  position: absolute; inset: 0;
+  background: var(--bg); z-index: 52;
   transform: translateX(100%);
-  transition: transform 0.3s cubic-bezier(0.32,0.72,0,1);
-  overflow-y: auto;
-  padding: 60px 20px 40px;
+  transition: transform 0.28s cubic-bezier(0.32,0.72,0,1);
+  overflow-y: auto; padding: 60px 20px 40px;
 }
-
 #changelog-panel.open { transform: translateX(0); }
 
 #changelog-back {
-  position: fixed;
-  top: 16px; left: 20px;
+  position: fixed; top: 16px; left: 20px;
   width: 36px; height: 36px;
-  background: var(--surface2);
-  border: none;
-  border-radius: 50%;
-  color: var(--text);
-  font-size: 20px;
-  cursor: pointer;
+  background: var(--surface2); border: none; border-radius: 50%;
+  color: var(--text); font-size: 20px; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   z-index: 53;
 }
@@ -321,125 +311,66 @@ html, body {
 .settings-section { margin-bottom: 28px; }
 
 .settings-label {
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  color: var(--text-dim);
-  text-transform: uppercase;
-  margin-bottom: 12px;
+  font-size: 11px; letter-spacing: 0.12em; color: var(--text-dim);
+  text-transform: uppercase; margin-bottom: 12px;
   font-family: var(--font-mono);
 }
 
 .settings-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: var(--surface);
-  border-radius: 12px;
-  padding: 14px 16px;
-  margin-bottom: 8px;
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--surface); border-radius: 12px;
+  padding: 14px 16px; margin-bottom: 8px;
 }
-
 .settings-row-label { font-size: 15px; color: var(--text); }
-
-.settings-row a {
-  color: var(--accent);
-  text-decoration: none;
-  font-size: 15px;
-}
-
-/* Nav row (chevron) */
-.settings-row.nav {
-  cursor: pointer;
-  transition: background 0.15s;
-}
+.settings-row a { color: var(--accent); text-decoration: none; font-size: 15px; }
+.settings-row.nav { cursor: pointer; transition: background 0.14s; }
 .settings-row.nav:active { background: var(--surface2); }
-.settings-row .chevron {
-  color: var(--text-dim);
-  font-size: 16px;
-}
-
-/* Danger row */
+.settings-row .chevron { color: var(--text-dim); font-size: 16px; }
 .settings-row.danger .settings-row-label { color: #e05555; }
 
-/* Share button */
 .settings-share-btn {
-  width: 100%;
-  padding: 14px 16px;
-  background: var(--surface);
-  border: none;
-  border-radius: 12px;
-  color: var(--accent);
-  font-family: var(--font-jp);
-  font-size: 15px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 8px;
-  transition: background 0.15s;
+  width: 100%; padding: 14px 16px;
+  background: var(--surface); border: none; border-radius: 12px;
+  color: var(--accent); font-family: var(--font-jp); font-size: 15px;
+  cursor: pointer; display: flex; align-items: center; gap: 10px;
+  margin-bottom: 8px; transition: background 0.14s;
 }
-
 .settings-share-btn:active { background: var(--surface2); }
 
-/* Changelog */
 .changelog-item {
-  background: var(--surface);
-  border-radius: 12px;
-  padding: 12px 16px;
-  margin-bottom: 8px;
+  background: var(--surface); border-radius: 12px;
+  padding: 12px 16px; margin-bottom: 8px;
 }
-
 .changelog-version {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--accent);
-  letter-spacing: 0.08em;
-  margin-bottom: 6px;
+  font-family: var(--font-mono); font-size: 12px; color: var(--accent);
+  letter-spacing: 0.08em; margin-bottom: 6px;
 }
-
-.changelog-notes {
-  font-size: 13px;
-  color: var(--text-dim);
-  line-height: 1.65;
-}
+.changelog-notes { font-size: 13px; color: var(--text-dim); line-height: 1.65; }
 
 /* Toggle */
 .toggle {
-  width: 44px; height: 26px;
-  background: var(--surface2);
-  border-radius: 13px;
-  position: relative;
-  cursor: pointer;
-  transition: background 0.2s;
-  flex-shrink: 0;
-  border: none;
+  width: 44px; height: 26px; background: var(--surface2);
+  border-radius: 13px; position: relative; cursor: pointer;
+  transition: background 0.2s; flex-shrink: 0; border: none;
 }
 .toggle.on { background: var(--accent); }
 .toggle::after {
-  content: '';
-  position: absolute;
-  width: 20px; height: 20px;
-  background: var(--bg);
-  border-radius: 50%;
-  top: 3px; left: 3px;
-  transition: transform 0.2s;
+  content: ''; position: absolute;
+  width: 20px; height: 20px; background: var(--bg);
+  border-radius: 50%; top: 3px; left: 3px; transition: transform 0.2s;
 }
-.toggle.on::after { transform: translateX(18px); background: var(--bg); }
+.toggle.on::after { transform: translateX(18px); }
 
-/* Color swatches */
 .color-swatches { display: flex; gap: 10px; flex-wrap: wrap; }
-
 .swatch {
-  width: 36px; height: 36px;
-  border-radius: 50%;
-  cursor: pointer;
-  border: 3px solid transparent;
-  transition: transform 0.15s, border-color 0.15s;
+  width: 36px; height: 36px; border-radius: 50%; cursor: pointer;
+  border: 3px solid transparent; transition: transform 0.15s, border-color 0.15s;
 }
-
 .swatch.active { border-color: var(--text); transform: scale(1.15); }
 
-/* ─── CALC WRAPPER ─── */
+/* ═══════════════════════════════════════
+   CALC WRAPPER  (fixed height = grid)
+═══════════════════════════════════════ */
 #calc-wrapper {
   flex: 0 0 auto;
   position: relative;
@@ -456,45 +387,32 @@ html, body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 5px;
-  transition: left 0.3s cubic-bezier(0.32,0.72,0,1),
-              right 0.3s cubic-bezier(0.32,0.72,0,1);
+  gap: 6px;
+  transition: left 0.28s cubic-bezier(0.32,0.72,0,1),
+              right 0.28s cubic-bezier(0.32,0.72,0,1);
 }
 
-/* Hand switch: square */
-#hand-switch-btn {
-  width: 28px;
-  height: 28px; /* square = same as side-ctrl */
+/* All side buttons: 56px square (2× of 28) */
+.side-ctrl, #hand-switch-btn {
+  width: var(--ctrl-size);
+  height: var(--ctrl-size);
   background: var(--surface2);
   border: none;
-  border-radius: 8px;
-  color: var(--text-dim);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: background 0.15s;
-  font-size: 11px;
-  padding: 0;
-}
-
-#hand-switch-btn:active { background: var(--accent); color: var(--bg); }
-
-/* Side ctrl buttons */
-.side-ctrl {
-  width: 28px; height: 28px;
-  background: var(--surface2);
-  border: none;
-  border-radius: 8px;
+  border-radius: 14px;
   color: var(--text-dim);
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  transition: background 0.15s, transform 0.1s;
+  transition: background 0.14s, transform 0.1s;
   padding: 0;
+  flex-shrink: 0;
 }
+.side-ctrl:active, #hand-switch-btn:active {
+  background: var(--surface); transform: scale(0.92);
+}
+#hand-switch-btn:active { background: var(--accent); color: var(--bg); }
 
-.side-ctrl:active { background: var(--surface); transform: scale(0.9); }
-.side-ctrl svg { width: 14px; height: 14px; }
+.side-ctrl svg { width: 24px; height: 24px; }
+#hand-switch-btn { font-size: 20px; }
 
 /* ─── BUTTON GRID ─── */
 #btn-grid {
@@ -503,211 +421,133 @@ html, body {
   grid-template-rows: repeat(5, var(--btn-size));
   gap: var(--gap);
   position: absolute;
-  transition: left 0.3s cubic-bezier(0.32,0.72,0,1),
-              top 0.3s cubic-bezier(0.32,0.72,0,1),
-              transform 0.3s cubic-bezier(0.32,0.72,0,1);
   cursor: grab;
   user-select: none;
-  animation: slideUp 0.35s ease both;
+  touch-action: none;
+  transition: left 0.28s cubic-bezier(0.32,0.72,0,1),
+              top  0.28s cubic-bezier(0.32,0.72,0,1),
+              transform 0.28s cubic-bezier(0.32,0.72,0,1);
+  animation: slideUp 0.32s ease both;
 }
-
 #btn-grid.dragging { cursor: grabbing; transition: none; }
 #btn-grid.flip { transform: scaleX(-1); }
 #btn-grid.flip .btn:active { transform: scale(0.93); }
 
 @keyframes slideUp {
-  from { transform: translateY(16px); opacity: 0; }
+  from { transform: translateY(14px); opacity: 0; }
   to   { transform: translateY(0);    opacity: 1; }
 }
 
 /* ─── BUTTONS ─── */
 .btn {
-  width: var(--btn-size);
-  height: var(--btn-size);
-  border: none;
-  border-radius: var(--radius);
-  font-family: var(--font-mono);
-  font-size: 20px;
-  font-weight: 400;
+  width: var(--btn-size); height: var(--btn-size);
+  border: none; border-radius: var(--radius);
+  font-family: var(--font-mono); font-size: 20px; font-weight: 400;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  position: relative; overflow: hidden;
   transition: transform 0.1s;
-  -webkit-user-select: none;
-  user-select: none;
-  touch-action: none;
+  -webkit-user-select: none; user-select: none; touch-action: none;
 }
-
 .btn::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: white;
-  opacity: 0;
-  border-radius: inherit;
+  content: ''; position: absolute; inset: 0;
+  background: white; opacity: 0; border-radius: inherit;
   transition: opacity 0.12s;
 }
 .btn:active::after { opacity: 0.07; }
 .btn:active { transform: scale(0.93); }
 
 .btn-num {
-  background: var(--btn-num);
-  color: var(--text);
-  box-shadow: 0 4px 12px var(--shadow), inset 0 1px 0 rgba(255,255,255,0.05);
+  background: var(--btn-num); color: var(--text);
+  box-shadow: 0 4px 10px var(--shadow), inset 0 1px 0 rgba(255,255,255,0.05);
 }
-
 .btn-op {
-  background: var(--btn-op);
-  color: var(--accent);
+  background: var(--btn-op); color: var(--accent);
   font-size: 22px;
-  box-shadow: 0 4px 12px var(--shadow);
+  box-shadow: 0 4px 10px var(--shadow);
 }
-
 .btn-fn {
-  background: var(--btn-fn);
-  color: var(--text-dim);
+  background: var(--btn-fn); color: var(--text-dim);
   font-size: 15px;
-  box-shadow: 0 4px 12px var(--shadow);
+  box-shadow: 0 4px 10px var(--shadow);
 }
-
-/* = : no shadow */
 .btn-eq {
-  background: var(--accent);
-  color: #fff;
-  font-size: 24px;
-  font-weight: 500;
+  background: var(--accent); color: #fff;
+  font-size: 26px; font-weight: 500;
 }
 
-/* Edit mode */
+/* edit mode */
 #btn-grid.edit-mode { cursor: move; }
 #btn-grid.edit-mode .btn { pointer-events: none; }
 #btn-grid.edit-mode::before {
-  content: '';
-  position: absolute;
-  inset: -18px;
-  border: 2px dashed var(--accent);
-  border-radius: 18px;
-  opacity: 0.4;
-  pointer-events: none;
+  content: ''; position: absolute; inset: -18px;
+  border: 2px dashed var(--accent); border-radius: 20px;
+  opacity: 0.4; pointer-events: none;
 }
 
 /* ─── EDIT OVERLAY ─── */
 #edit-overlay {
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  background: linear-gradient(180deg, var(--accent-dim) 0%, transparent 100%);
+  position: absolute; top: 0; left: 0; right: 0;
+  background: linear-gradient(180deg, var(--accent-dim), transparent);
   padding: 10px 12px;
-  display: none;
-  gap: 6px;
-  z-index: 20;
-  flex-wrap: wrap;
+  display: none; gap: 6px; z-index: 20; flex-wrap: wrap;
 }
-
 #edit-overlay.visible { display: flex; }
 
 .edit-btn {
-  height: 30px;
-  padding: 0 12px;
-  background: var(--surface);
-  border: 1px solid var(--surface2);
-  border-radius: 20px;
-  color: var(--text);
-  font-family: var(--font-mono);
-  font-size: 12px;
-  cursor: pointer;
-  display: flex; align-items: center; gap: 5px;
-  transition: background 0.15s;
+  height: 30px; padding: 0 12px;
+  background: var(--surface); border: 1px solid var(--surface2);
+  border-radius: 20px; color: var(--text);
+  font-family: var(--font-mono); font-size: 12px;
+  cursor: pointer; display: flex; align-items: center; gap: 5px;
+  transition: background 0.14s;
 }
-
 .edit-btn:active { background: var(--surface2); }
 .edit-btn.accent { background: var(--accent); color: var(--bg); border-color: transparent; }
 
 /* ─── SIZE CONTROLS ─── */
 #size-controls {
-  position: absolute;
-  bottom: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: none;
-  background: var(--surface);
-  border-radius: 20px;
-  padding: 8px 16px;
-  gap: 12px;
-  z-index: 25;
-  align-items: center;
+  position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
+  display: none; background: var(--surface); border-radius: 20px;
+  padding: 8px 16px; gap: 12px; z-index: 25; align-items: center;
   box-shadow: 0 4px 20px var(--shadow);
 }
-
 #size-controls.visible { display: flex; }
-
 .size-ctrl {
-  width: 32px; height: 32px;
-  background: var(--surface2);
-  border: none;
-  border-radius: 8px;
-  color: var(--text);
-  font-size: 18px;
-  cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; background: var(--surface2); border: none;
+  border-radius: 8px; color: var(--text); font-size: 18px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
 }
-
 .size-ctrl:active { opacity: 0.7; }
-
 #size-label {
-  font-family: var(--font-mono);
-  font-size: 13px;
-  color: var(--text-dim);
-  min-width: 50px;
-  text-align: center;
+  font-family: var(--font-mono); font-size: 13px; color: var(--text-dim);
+  min-width: 50px; text-align: center;
 }
 
 /* ─── INSTALL BUTTON ─── */
-#install-btn {
-  position: absolute;
-  z-index: 20;
-  display: none;
-}
-
+#install-btn { position: absolute; z-index: 20; display: none; }
 #install-btn.visible { display: flex; }
-
 #install-btn button {
-  background: var(--surface2);
-  border: 1px solid var(--surface);
-  border-radius: 10px;
-  color: var(--text-dim);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  padding: 6px 10px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  white-space: nowrap;
+  background: var(--surface2); border: 1px solid var(--surface);
+  border-radius: 10px; color: var(--text-dim);
+  font-family: var(--font-mono); font-size: 11px;
+  padding: 6px 10px; cursor: pointer;
+  display: flex; align-items: center; gap: 5px; white-space: nowrap;
 }
-
 #install-btn button:active { background: var(--surface); }
 
 /* ─── RIPPLE ─── */
 @keyframes ripple { to { transform: scale(4); opacity: 0; } }
-
 .ripple-effect {
-  position: absolute;
-  width: 20px; height: 20px;
-  background: rgba(255,255,255,0.2);
-  border-radius: 50%;
-  transform: scale(0);
-  animation: ripple 0.38s linear;
-  pointer-events: none;
-  margin-left: -10px;
-  margin-top: -10px;
+  position: absolute; width: 20px; height: 20px;
+  background: rgba(255,255,255,0.18); border-radius: 50%;
+  transform: scale(0); animation: ripple 0.36s linear;
+  pointer-events: none; margin-left: -10px; margin-top: -10px;
 }
 </style>
 </head>
 <body>
-<div id="app" data-theme="dark">
+<div id="app" data-theme="dark" class="state-entering">
 
   <!-- ─── FULL HISTORY PANEL ─── -->
   <div id="history-panel">
@@ -751,7 +591,7 @@ html, body {
 
       <div class="settings-section">
         <div class="settings-label">データ</div>
-        <div class="settings-row danger" id="btn-clear-history" style="cursor:pointer;">
+        <div class="settings-row danger" id="btn-clear-history" style="cursor:pointer">
           <span class="settings-row-label">計算履歴を削除</span>
           <span style="color:#e05555;font-size:16px">⌫</span>
         </div>
@@ -764,9 +604,13 @@ html, body {
           <span class="settings-row-label">開発者</span>
           <a href="https://YOUR_DEVELOPER_LINK_HERE" target="_blank" rel="noopener">リンク →</a>
         </div>
-        <!-- ★ 共有URL: shareUrl を書き換えてください (JS内の const shareUrl) -->
+        <!-- ★ 共有URL: JS内の const shareUrl を書き換えてください -->
         <button class="settings-share-btn" id="btn-share">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+          </svg>
           このアプリをシェア
         </button>
       </div>
@@ -779,7 +623,7 @@ html, body {
         </div>
         <div class="settings-row">
           <span class="settings-row-label">片手電卓</span>
-          <span style="color:var(--text-dim);font-family:var(--font-mono);font-size:13px">v1.2</span>
+          <span style="color:var(--text-dim);font-family:var(--font-mono);font-size:13px">v1.3</span>
         </div>
       </div>
 
@@ -792,16 +636,25 @@ html, body {
     <div class="settings-label" style="margin-bottom:16px">バージョン更新履歴</div>
 
     <div class="changelog-item">
+      <div class="changelog-version">v1.3</div>
+      <div class="changelog-notes">
+        · 固定ヘッダー（式・結果表示エリア）を廃止し画面全体を活用<br>
+        · Google Pixel純正電卓に準拠したUI設計に刷新<br>
+        　- 過去履歴が上部に小さく積み上がる<br>
+        　- 現在の入力中は式を大きく表示<br>
+        　- = 後は結果を大きく、式を小さく上部に表示<br>
+        · 履歴・編集・左右切替・設定ボタンを2倍サイズに変更
+      </div>
+    </div>
+
+    <div class="changelog-item">
       <div class="changelog-version">v1.2</div>
       <div class="changelog-notes">
         · 履歴増加時の電卓グリッドズレを修正<br>
         · アクセントカラーを新6色に変更<br>
         · 左右切替ボタンを正方形に統一<br>
-        · 電卓上の直近履歴表示数を画面サイズに応じて自動調整<br>
+        · 電卓上の直近履歴表示数を自動調整<br>
         · イコール押下時のアニメーションを削除<br>
-        · 最新の計算を履歴エリア最下部に表示、下が新しい順に変更<br>
-        · 履歴の式と結果を2行表示に変更（式は小さく薄く、結果は大きく）<br>
-        · 現在の入力は式を大きく・結果を小さく薄く表示<br>
         · ライトモードのカラー未適用バグを修正<br>
         · 設定→バージョン更新履歴のサブページ化<br>
         · 計算履歴削除機能を追加<br>
@@ -816,8 +669,7 @@ html, body {
         · 0キーを正方形に変更、最下行を「0 / . / ⌫ / =」に統一<br>
         · 右手・左手モード表示テキストを非表示化<br>
         · 履歴・編集・設定ボタンを左右手切替ボタンと同列に集約<br>
-        · スワイプ履歴表示を廃止<br>
-        · 表示エリア下に直近履歴を常時表示<br>
+        · スワイプ履歴表示を廃止、表示エリア下に常時表示に変更<br>
         · アクセントカラーを6色に絞り込み<br>
         · 設定画面にバージョン更新履歴・開発者リンク・シェアボタンを追加<br>
         · PWA非インストール時にインストールボタンを表示
@@ -837,17 +689,20 @@ html, body {
     </div>
   </div>
 
-  <!-- ─── DISPLAY AREA ─── -->
-  <div id="display-area">
-    <div id="expr"></div>
-    <div id="result">0</div>
-  </div>
+  <!-- ═══════════════════════════════
+       DISPLAY ZONE (fills above calc)
+  ════════════════════════════════ -->
+  <div id="display-zone">
+    <!-- Past history rows -->
+    <div id="history-rows">
+      <div id="history-rows-inner"></div>
+    </div>
 
-  <div id="divider"></div>
-
-  <!-- ─── INLINE HISTORY STRIP ─── -->
-  <div id="history-strip">
-    <div id="history-strip-inner"></div>
+    <!-- Current live input -->
+    <div id="live-display">
+      <div id="live-expr"></div>
+      <div id="live-result"></div>
+    </div>
   </div>
 
   <!-- ─── EDIT OVERLAY ─── -->
@@ -858,7 +713,9 @@ html, body {
     <button class="edit-btn accent" id="edit-done">完了</button>
   </div>
 
-  <!-- ─── CALC WRAPPER ─── -->
+  <!-- ═══════════════════════════════
+       CALC WRAPPER
+  ════════════════════════════════ -->
   <div id="calc-wrapper">
 
     <div id="size-controls">
@@ -867,10 +724,13 @@ html, body {
       <button class="size-ctrl" id="size-up">＋</button>
     </div>
 
-    <!-- INSTALL BUTTON -->
     <div id="install-btn">
       <button id="install-trigger">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
         ホーム画面に追加
       </button>
     </div>
@@ -878,19 +738,20 @@ html, body {
     <!-- SIDE PANEL -->
     <div id="side-panel" style="left:4px">
       <button class="side-ctrl" id="btn-history" title="履歴">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-          <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.5"/>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+          <polyline points="1 4 1 10 7 10"/>
+          <path d="M3.51 15a9 9 0 1 0 .49-4.5"/>
         </svg>
       </button>
       <button class="side-ctrl" id="btn-edit" title="レイアウト編集">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
           <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
           <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
         </svg>
       </button>
       <button id="hand-switch-btn" title="左右手切替">⇆</button>
       <button class="side-ctrl" id="btn-settings" title="設定">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
           <circle cx="12" cy="12" r="3"/>
           <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
         </svg>
@@ -931,43 +792,44 @@ html, body {
 
 <script>
 (() => {
-  // ─── STATE ───
+  /* ─── STATE ─── */
   const S = {
-    expr: '', result: '0', hasResult: false,
-    history: [],          // [{expr, result}, ...] newest first
+    expr: '',          // current expression string
+    result: '',        // live preview result (empty = no preview)
+    hasResult: false,  // true after = pressed
+    history: [],       // [{expr, result}] newest-first
     isRight: true,
     editMode: false,
     haptic: true,
     theme: 'dark',
     accent: '#5bb88a',
     btnSize: 70, gap: 10,
-    gridPos: { right: { x: null, y: null }, left: { x: null, y: null } },
+    gridPos: { right: {x:null,y:null}, left: {x:null,y:null} },
     undoStack: [],
     showSizeCtrl: false,
   };
 
-  // ─── ELEMENTS ───
-  const $app           = document.getElementById('app');
-  const $expr          = document.getElementById('expr');
-  const $result        = document.getElementById('result');
-  const $grid          = document.getElementById('btn-grid');
-  const $wrapper       = document.getElementById('calc-wrapper');
-  const $strip         = document.getElementById('history-strip');
-  const $stripInner    = document.getElementById('history-strip-inner');
-  const $editOverlay   = document.getElementById('edit-overlay');
-  const $sizeControls  = document.getElementById('size-controls');
-  const $sizeLabel     = document.getElementById('size-label');
-  const $sidePanel     = document.getElementById('side-panel');
-  const $historyPanel  = document.getElementById('history-panel');
-  const $historyList   = document.getElementById('history-list');
-  const $settingsPanel = document.getElementById('settings-panel');
-  const $changelogPanel= document.getElementById('changelog-panel');
-  const $installBtn    = document.getElementById('install-btn');
+  /* ─── ELEMENTS ─── */
+  const $app            = document.getElementById('app');
+  const $liveExpr       = document.getElementById('live-expr');
+  const $liveResult     = document.getElementById('live-result');
+  const $historyRowsInner = document.getElementById('history-rows-inner');
+  const $grid           = document.getElementById('btn-grid');
+  const $wrapper        = document.getElementById('calc-wrapper');
+  const $editOverlay    = document.getElementById('edit-overlay');
+  const $sizeControls   = document.getElementById('size-controls');
+  const $sizeLabel      = document.getElementById('size-label');
+  const $sidePanel      = document.getElementById('side-panel');
+  const $historyPanel   = document.getElementById('history-panel');
+  const $historyList    = document.getElementById('history-list');
+  const $settingsPanel  = document.getElementById('settings-panel');
+  const $changelogPanel = document.getElementById('changelog-panel');
+  const $installBtn     = document.getElementById('install-btn');
 
-  // ─── PERSIST ───
+  /* ─── PERSIST ─── */
   function loadPrefs() {
     try {
-      const d = JSON.parse(localStorage.getItem('calc_prefs3') || '{}');
+      const d = JSON.parse(localStorage.getItem('calc_prefs4') || '{}');
       if (d.theme)           S.theme   = d.theme;
       if (d.accent)          S.accent  = d.accent;
       if (d.haptic != null)  S.haptic  = d.haptic;
@@ -981,7 +843,7 @@ html, body {
 
   function savePrefs() {
     try {
-      localStorage.setItem('calc_prefs3', JSON.stringify({
+      localStorage.setItem('calc_prefs4', JSON.stringify({
         theme: S.theme, accent: S.accent, haptic: S.haptic,
         isRight: S.isRight, btnSize: S.btnSize, gap: S.gap,
         gridPos: S.gridPos, history: S.history
@@ -989,11 +851,10 @@ html, body {
     } catch(e) {}
   }
 
-  // ─── THEME ───
+  /* ─── THEME / ACCENT ─── */
   function applyTheme() {
     $app.dataset.theme = S.theme;
     document.getElementById('toggle-theme').classList.toggle('on', S.theme === 'dark');
-    // theme-color meta
     document.querySelector('meta[name="theme-color"]').content =
       S.theme === 'dark' ? '#0f0f0f' : '#f0f0ee';
   }
@@ -1004,34 +865,32 @@ html, body {
     const r = parseInt(h.substr(0,2),16);
     const g = parseInt(h.substr(2,2),16);
     const b = parseInt(h.substr(4,2),16);
-    document.documentElement.style.setProperty('--accent-dim', `rgba(${r},${g},${b},0.15)`);
+    document.documentElement.style.setProperty('--accent-dim', `rgba(${r},${g},${b},0.13)`);
     document.querySelectorAll('.swatch').forEach(s =>
       s.classList.toggle('active', s.dataset.color === S.accent)
     );
   }
 
-  // ─── GRID SIZE ───
+  /* ─── GRID SIZE + WRAPPER HEIGHT ─── */
   function applyGridSize() {
     document.documentElement.style.setProperty('--btn-size', S.btnSize + 'px');
     document.documentElement.style.setProperty('--gap', S.gap + 'px');
     $sizeLabel.textContent = S.btnSize + ' px';
   }
 
-  // ─── CALC WRAPPER HEIGHT: fixed to grid size so strip doesn't shift grid ───
   function applyWrapperHeight() {
     const gridH = S.btnSize * 5 + S.gap * 4;
-    const pad   = 16; // bottom breathing room
-    $wrapper.style.height = (gridH + pad) + 'px';
+    $wrapper.style.height = (gridH + 18) + 'px';
   }
 
-  // ─── GRID POSITION ───
+  /* ─── GRID POSITION ─── */
   function getDefaultPos() {
     const wr  = $wrapper.getBoundingClientRect();
+    const ctrlW = 64; // side panel width estimate
     const gW  = S.btnSize * 4 + S.gap * 3;
     const gH  = S.btnSize * 5 + S.gap * 4;
-    const mgn = 40; // side panel width
-    const x   = S.isRight ? wr.width - gW - mgn : mgn;
-    const y   = Math.max(0, wr.height - gH - 10);
+    const x   = S.isRight ? wr.width - gW - ctrlW : ctrlW;
+    const y   = Math.max(4, wr.height - gH - 10);
     return { x, y };
   }
 
@@ -1044,11 +903,10 @@ html, body {
     $grid.style.top  = y + 'px';
   }
 
-  // ─── HANDEDNESS ───
+  /* ─── HANDEDNESS ─── */
   function setHand(isRight) {
     S.isRight = isRight;
     $grid.classList.toggle('flip', !isRight);
-
     if (isRight) {
       $sidePanel.style.left  = '4px';
       $sidePanel.style.right = 'auto';
@@ -1056,27 +914,26 @@ html, body {
       $sidePanel.style.right = '4px';
       $sidePanel.style.left  = 'auto';
     }
-
     positionInstallBtn();
     applyGridPos();
     savePrefs();
   }
 
-  // ─── HAPTIC ───
+  /* ─── HAPTIC ─── */
   function vibrate(ms = 10) {
     if (!S.haptic || !navigator.vibrate) return;
     navigator.vibrate(ms);
   }
 
-  // ─── CALC ───
+  /* ─── CALC ─── */
   function formatNum(n) {
     if (!isFinite(n)) return 'エラー';
     return parseFloat(n.toPrecision(12)).toString();
   }
 
-  function evaluate() {
+  function evaluate(expr) {
     try {
-      let e = S.expr.replace(/×/g,'*').replace(/÷/g,'/').replace(/−/g,'-');
+      let e = expr.replace(/×/g,'*').replace(/÷/g,'/').replace(/−/g,'-');
       e = e.replace(/(\d+\.?\d*)%/g, '($1/100)');
       if (!e || /[+\-*/.%]$/.test(e)) return null;
       const r = Function('"use strict"; return (' + e + ')')();
@@ -1084,73 +941,76 @@ html, body {
     } catch(e) { return null; }
   }
 
-  // ─── STRIP: auto-fit history items ───
-  function updateStrip() {
-    $stripInner.innerHTML = '';
+  /* ─── DISPLAY UPDATE ─── */
+  /*
+    Pixel-style states:
+    - entering: large expr, small dim result-preview
+    - result:   small dim expr (formula), large result
+  */
+  function updateDisplay() {
+    if (S.hasResult) {
+      // After = : show formula small, result large
+      $app.className = $app.className.replace(/state-\w+/g,'') + ' state-result';
+      $liveExpr.textContent   = S.expr;   // the completed formula
+      $liveResult.textContent = S.result; // the answer (large)
+    } else {
+      // Entering mode: show expression large, preview small
+      $app.className = $app.className.replace(/state-\w+/g,'') + ' state-entering';
+      $liveExpr.textContent   = S.expr || '0';
+      $liveResult.textContent = (S.result && S.result !== S.expr) ? S.result : '';
+    }
 
-    // Measure available height
-    const availH = $strip.getBoundingClientRect().height;
-    const ITEM_H = 44; // approx px per completed history item (2 lines)
-    const CURR_H = 44; // current input item
+    updateHistoryRows();
+  }
 
-    // How many past history items fit above the current input row
-    const maxPast = Math.max(0, Math.floor((availH - CURR_H) / ITEM_H));
-    const showCount = Math.min(S.history.length, maxPast);
+  /* ─── HISTORY ROWS (inline, above live display) ─── */
+  function updateHistoryRows() {
+    const zone      = document.getElementById('history-rows');
+    const zoneH     = zone.getBoundingClientRect().height;
+    // Each completed row: ~13px expr + ~26px result + ~6px padding ≈ 45px
+    const ITEM_H    = 45;
+    const maxItems  = Math.max(0, Math.floor(zoneH / ITEM_H));
+    const count     = Math.min(S.history.length, maxItems);
 
-    // Build: oldest-of-shown first (so newest is just above current)
-    const items = S.history.slice(0, showCount).reverse(); // reverse: oldest first visually
+    // Show oldest-of-visible first (newest closest to live input)
+    const visible = S.history.slice(0, count).reverse();
 
-    items.forEach(h => {
+    $historyRowsInner.innerHTML = '';
+    visible.forEach(h => {
       const div = document.createElement('div');
-      div.className = 'strip-item';
+      div.className = 'hrow';
       div.innerHTML =
-        `<span class="si-expr">${h.expr}</span>` +
-        `<span class="si-result">${h.result}</span>`;
+        `<span class="hrow-expr">${h.expr}</span>` +
+        `<span class="hrow-result">${h.result}</span>`;
       div.addEventListener('pointerdown', () => {
-        S.expr = h.result; S.result = h.result; S.hasResult = true;
+        S.expr = h.result;
+        S.result = h.result;
+        S.hasResult = true;
         updateDisplay();
         vibrate(8);
       });
-      $stripInner.appendChild(div);
+      $historyRowsInner.appendChild(div);
     });
-
-    // Current live input (always shown at bottom)
-    const curr = document.createElement('div');
-    curr.className = 'strip-item current';
-    const liveExpr   = S.expr || '0';
-    const liveResult = (!S.hasResult && S.result !== '0' && S.result !== liveExpr)
-      ? S.result : '';
-    curr.innerHTML =
-      `<span class="si-expr">${liveExpr}</span>` +
-      (liveResult ? `<span class="si-result">${liveResult}</span>` : '');
-    $stripInner.appendChild(curr);
   }
 
-  function updateDisplay() {
-    $expr.textContent   = S.expr || '';
-    $result.textContent = S.result;
-    $result.classList.remove('error');
-    updateStrip();
-  }
+  /* ─── HANDLE BUTTON ─── */
+  const OPS = ['÷', '×', '−', '+'];
 
-  // ─── HANDLE BUTTON ───
   function handleBtn(val) {
     vibrate(8);
-    const ops = ['÷', '×', '−', '+'];
-    const isOp = ops.includes(val);
+    const isOp = OPS.includes(val);
 
     switch(val) {
       case 'AC':
-        S.expr = ''; S.result = '0'; S.hasResult = false;
+        S.expr = ''; S.result = ''; S.hasResult = false;
         break;
 
       case 'DEL':
         if (S.hasResult) {
-          S.expr = ''; S.result = '0'; S.hasResult = false;
+          S.expr = ''; S.result = ''; S.hasResult = false;
         } else {
           S.expr = S.expr.slice(0,-1);
-          if (!S.expr) S.result = '0';
-          else { const r = evaluate(); if (r !== null) S.result = r; }
+          S.result = evaluate(S.expr) ?? '';
         }
         break;
 
@@ -1161,29 +1021,28 @@ html, body {
           S.expr = S.result; S.hasResult = false;
         } else if (S.expr) {
           S.expr = S.expr.startsWith('-') ? S.expr.slice(1) : '-' + S.expr;
-          const r = evaluate(); if (r !== null) S.result = r;
+          S.result = evaluate(S.expr) ?? '';
         }
         break;
 
       case '%':
         if (S.expr) {
           S.expr += '%';
-          const r = evaluate(); if (r !== null) S.result = r;
+          S.result = evaluate(S.expr) ?? '';
         }
         break;
 
       case '=': {
         if (!S.expr) break;
-        const res = evaluate();
-        if (res === null || res === 'エラー') {
-          S.result = 'エラー';
-          $result.classList.add('error');
+        const res = evaluate(S.expr);
+        if (!res || res === 'エラー') {
+          S.result = 'エラー'; S.hasResult = true;
           vibrate(30);
         } else {
           S.history.unshift({ expr: S.expr, result: res });
           if (S.history.length > 10) S.history.pop();
           S.result = res;
-          S.expr = res;
+          // Keep S.expr as-is (shows as small formula above large result)
           S.hasResult = true;
           vibrate(12);
         }
@@ -1192,12 +1051,12 @@ html, body {
       }
 
       case '.': {
-        if (S.hasResult) { S.expr = '0.'; S.result = '0.'; S.hasResult = false; break; }
+        if (S.hasResult) { S.expr = '0.'; S.result = ''; S.hasResult = false; break; }
         const lastNum = S.expr.split(/[+\-×÷−]/).pop();
         if (!lastNum.includes('.')) {
-          if (!S.expr || ops.some(o => S.expr.endsWith(o))) S.expr += '0';
+          if (!S.expr || OPS.some(o => S.expr.endsWith(o))) S.expr += '0';
           S.expr += '.';
-          S.result = S.expr;
+          S.result = '';
         }
         break;
       }
@@ -1205,37 +1064,36 @@ html, body {
       default:
         if (isOp) {
           S.hasResult = false;
-          if (S.expr && ops.some(o => S.expr.endsWith(o)))
+          if (S.expr && OPS.some(o => S.expr.endsWith(o)))
             S.expr = S.expr.slice(0,-1) + val;
           else if (S.expr) S.expr += val;
           else if (val === '−') S.expr = '−';
-          const r = evaluate(); if (r !== null) S.result = r;
+          S.result = evaluate(S.expr) ?? '';
         } else {
-          if (S.hasResult) { S.expr = ''; S.hasResult = false; }
+          // digit
+          if (S.hasResult) { S.expr = ''; S.result = ''; S.hasResult = false; }
           if (val !== '0' || S.expr !== '0') {
-            if (S.expr === '0') S.expr = val;
-            else S.expr += val;
+            S.expr = (S.expr === '0') ? val : S.expr + val;
           }
-          const r = evaluate();
-          S.result = (r !== null) ? r : S.expr;
+          S.result = evaluate(S.expr) ?? '';
         }
     }
 
     updateDisplay();
   }
 
-  // ─── RIPPLE ───
+  /* ─── RIPPLE ─── */
   function addRipple(btn, e) {
     const el = document.createElement('div');
     el.className = 'ripple-effect';
     const rect = btn.getBoundingClientRect();
-    el.style.left = ((e.clientX || rect.left + rect.width/2) - rect.left) + 'px';
-    el.style.top  = ((e.clientY || rect.top + rect.height/2) - rect.top)  + 'px';
+    el.style.left = ((e.clientX || rect.left + rect.width/2)  - rect.left) + 'px';
+    el.style.top  = ((e.clientY || rect.top  + rect.height/2) - rect.top)  + 'px';
     btn.appendChild(el);
     el.addEventListener('animationend', () => el.remove());
   }
 
-  // ─── BUTTON EVENTS ───
+  /* ─── BUTTON EVENTS ─── */
   $grid.addEventListener('pointerdown', e => {
     if (S.editMode) return;
     const btn = e.target.closest('.btn');
@@ -1244,7 +1102,7 @@ html, body {
     handleBtn(btn.dataset.val);
   });
 
-  // ─── DRAG ───
+  /* ─── DRAG ─── */
   let dragState = null;
 
   $grid.addEventListener('pointerdown', e => {
@@ -1252,7 +1110,7 @@ html, body {
     e.preventDefault();
     $grid.setPointerCapture(e.pointerId);
     const rect = $grid.getBoundingClientRect();
-    dragState = { startX: e.clientX - rect.left, startY: e.clientY - rect.top };
+    dragState = { sx: e.clientX - rect.left, sy: e.clientY - rect.top };
     $grid.classList.add('dragging');
     S.undoStack.push({ x: parseInt($grid.style.left)||0, y: parseInt($grid.style.top)||0 });
     if (S.undoStack.length > 20) S.undoStack.shift();
@@ -1263,8 +1121,8 @@ html, body {
     e.preventDefault();
     const wr = $wrapper.getBoundingClientRect();
     const gr = $grid.getBoundingClientRect();
-    let x = e.clientX - wr.left - dragState.startX;
-    let y = e.clientY - wr.top  - dragState.startY;
+    let x = e.clientX - wr.left - dragState.sx;
+    let y = e.clientY - wr.top  - dragState.sy;
     x = Math.max(-20, Math.min(wr.width  - gr.width  + 20, x));
     y = Math.max(0,   Math.min(wr.height - gr.height,      y));
     $grid.style.left = x + 'px';
@@ -1280,7 +1138,7 @@ html, body {
     savePrefs();
   });
 
-  // ─── EDIT MODE ───
+  /* ─── EDIT MODE ─── */
   document.getElementById('btn-edit').addEventListener('click', () => {
     S.editMode = true;
     $grid.classList.add('edit-mode');
@@ -1325,12 +1183,12 @@ html, body {
     applyGridSize(); applyWrapperHeight(); applyGridPos(); savePrefs();
   });
 
-  // ─── HAND SWITCH ───
+  /* ─── HAND SWITCH ─── */
   document.getElementById('hand-switch-btn').addEventListener('click', () => {
     vibrate(10); setHand(!S.isRight);
   });
 
-  // ─── HISTORY PANEL ───
+  /* ─── HISTORY PANEL ─── */
   document.getElementById('btn-history').addEventListener('click', () => {
     renderHistoryPanel(); $historyPanel.classList.add('open');
   });
@@ -1342,10 +1200,10 @@ html, body {
   function renderHistoryPanel() {
     $historyList.innerHTML = '';
     if (!S.history.length) {
-      $historyList.innerHTML = '<div style="color:var(--text-dim);font-family:var(--font-mono);font-size:14px;padding:20px;text-align:center">履歴がありません</div>';
+      $historyList.innerHTML =
+        '<div style="color:var(--text-dim);font-family:var(--font-mono);font-size:14px;padding:20px;text-align:center">履歴がありません</div>';
       return;
     }
-    // Show newest at top
     S.history.forEach(h => {
       const item = document.createElement('div');
       item.className = 'history-item';
@@ -1361,7 +1219,7 @@ html, body {
     });
   }
 
-  // ─── SETTINGS ───
+  /* ─── SETTINGS ─── */
   document.getElementById('btn-settings').addEventListener('click', () => {
     $settingsPanel.classList.add('open');
   });
@@ -1387,17 +1245,13 @@ html, body {
     });
   });
 
-  // Clear history
   document.getElementById('btn-clear-history').addEventListener('click', () => {
     if (!S.history.length) return;
     if (confirm('計算履歴を削除しますか？')) {
-      S.history = [];
-      savePrefs();
-      updateStrip();
+      S.history = []; savePrefs(); updateHistoryRows();
     }
   });
 
-  // Changelog sub-panel
   document.getElementById('btn-changelog').addEventListener('click', () => {
     $changelogPanel.classList.add('open');
   });
@@ -1406,7 +1260,7 @@ html, body {
     $changelogPanel.classList.remove('open');
   });
 
-  // Share
+  /* ─── SHARE ─── */
   document.getElementById('btn-share').addEventListener('click', () => {
     // ★ このURLをアプリのURLに書き換えてください
     const shareUrl = 'https://YOUR_APP_URL_HERE';
@@ -1419,7 +1273,7 @@ html, body {
     }
   });
 
-  // ─── PWA INSTALL ───
+  /* ─── PWA INSTALL ─── */
   let deferredPrompt = null;
 
   function isPwa() {
@@ -1438,14 +1292,10 @@ html, body {
     $installBtn.style.bottom = '12px';
   }
 
-  // Chrome/Android fires this when installable
   window.addEventListener('beforeinstallprompt', e => {
     e.preventDefault();
     deferredPrompt = e;
-    if (!isPwa()) {
-      $installBtn.classList.add('visible');
-      positionInstallBtn();
-    }
+    if (!isPwa()) { $installBtn.classList.add('visible'); positionInstallBtn(); }
   });
 
   document.getElementById('install-trigger').addEventListener('click', async () => {
@@ -1456,13 +1306,11 @@ html, body {
     deferredPrompt = null;
   });
 
-  window.addEventListener('appinstalled', () => {
-    $installBtn.classList.remove('visible');
-  });
+  window.addEventListener('appinstalled', () => $installBtn.classList.remove('visible'));
 
-  // ─── KEYBOARD ───
+  /* ─── KEYBOARD ─── */
   document.addEventListener('keydown', e => {
-    if ($historyPanel.classList.contains('open')  ||
+    if ($historyPanel.classList.contains('open') ||
         $settingsPanel.classList.contains('open') ||
         $changelogPanel.classList.contains('open')) return;
     const map = {
@@ -1475,18 +1323,18 @@ html, body {
     if (map[e.key]) { e.preventDefault(); handleBtn(map[e.key]); }
   });
 
-  // ─── RESIZE ───
+  /* ─── RESIZE ─── */
   let rTimer;
   window.addEventListener('resize', () => {
     clearTimeout(rTimer);
     rTimer = setTimeout(() => {
       if (S.gridPos[posKey()].x === null) applyGridPos();
       positionInstallBtn();
-      updateStrip();
+      updateHistoryRows();
     }, 100);
   });
 
-  // ─── INIT ───
+  /* ─── INIT ─── */
   function init() {
     loadPrefs();
     applyTheme();
@@ -1494,8 +1342,6 @@ html, body {
     applyGridSize();
     applyWrapperHeight();
     document.getElementById('toggle-haptic').classList.toggle('on', S.haptic);
-
-    // mark correct swatch
     document.querySelectorAll('.swatch').forEach(s =>
       s.classList.toggle('active', s.dataset.color === S.accent)
     );
